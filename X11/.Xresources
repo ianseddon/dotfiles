@@ -2,7 +2,7 @@
 ! Color Theme
 ! ------------------------------------------------------------
 
-#include "/home/ian/devel/dotfiles/nord.Xresources"
+#include "/home/ian/.dotfiles/X11/themes/nord.Xresources"
 
 ! ------------------------------------------------------------
 ! XFT

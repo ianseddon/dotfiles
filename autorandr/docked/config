@@ -1,0 +1,16 @@
+output DP-1
+off
+output eDP-1-1
+off
+output DP-0
+crtc 0
+mode 2560x1440
+pos 0x0
+primary
+rate 59.95
+rotate left
+output HDMI-1-1
+crtc 5
+mode 2560x1440
+pos 2560x0
+rate 59.95

@@ -2,7 +2,7 @@
 ! Color Theme
 ! ------------------------------------------------------------
 
-#include "/home/ian/.dotfiles/X11/themes/nord.Xresources"
+#include ".Xresources.theme"
 
 ! ------------------------------------------------------------
 ! XFT
@@ -23,7 +23,7 @@ Xft.lcdfilter : lcddefault
 URxvt*termName       : screen-256color
 URxvt*font           : xft:Fira Code:size=12
 URxvt*letterSpace    : 0
-URxvt*internalBorder : 1
+URxvt*internalBorder : 3
 URxvt*scrollBar      : false
 URxvt*pointerBlank   : true
 URxvt*hold           : false

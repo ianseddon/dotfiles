@@ -152,6 +152,7 @@ bar {
 # --------------------------------------------------------
 
 exec --no-startup-id /usr/bin/gnome-keyring-daemon --start --components=pkcs11,secrets,ssh
+exec --no-startup-id xrdb -merge ~/.Xresources
 exec --no-startup-id compton -b --config ~/.compton.conf
 exec --no-startup-id bash ~/.config/i3/autoxrandr.sh
 exec --no-startup-id dunst

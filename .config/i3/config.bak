@@ -1,0 +1,510 @@
+# i3wm config file (v4.13)
+#
+# Please see http://i3wm.org/docs/userguide.html for a complete reference!
+
+# Modifier is the Super (Win) key
+set $alt Mod1
+set $mod Mod4
+
+# -----------------------------------------------------------------------------
+# Default settings
+# -----------------------------------------------------------------------------
+
+# Font for window titles. Will also be used by the bar unless a different font
+# is used in the bar {} block below.
+# font pango:DejaVu Sans Mono for Powerline 10
+font pango: Fira Code 10
+
+# Atomic palette                 Fallback
+set_from_resource $base1 color0  #141A1F
+set_from_resource $acr50 color1  #EC5252
+set_from_resource $acg50 color2  #5DA813
+set_from_resource $aco50 color3  #C97016
+set_from_resource $acb50 color4  #3790E9
+set_from_resource $acv50 color5  #A35AED
+set_from_resource $acc50 color6  #13AEAE
+set_from_resource $base3 color7  #53697F
+set_from_resource $base2 color8  #1A2128
+set_from_resource $acr70 color9  #FF9191
+set_from_resource $acg70 color10 #9ACD68
+set_from_resource $aco70 color11 #EDA45C
+set_from_resource $acb70 color12 #7DBEFF
+set_from_resource $acv70 color13 #CA96FF
+set_from_resource $acc70 color14 #6ECFCF
+set_from_resource $base4 color15 #A6B5C5
+
+# Border style
+new_window pixel 2
+new_float normal
+
+# Smart borders
+hide_edge_borders smart
+
+# Orientation
+default_orientation horizontal
+
+# -----------------------------------------------------------------------------
+# Key bindings
+# -----------------------------------------------------------------------------
+
+# Start a terminal
+bindsym $mod+n exec --no-startup-id rxvt-unicode -name 'rxvt'
+bindsym $mod+Control+n exec --no-startup-id rxvt-unicode -name 'rxvt'
+bindsym $mod+b exec --no-startup-id rxvt-unicode -name 'rxvt-float'
+
+# Kill focused window
+bindsym $mod+x kill
+bindsym $mod+Control+j kill
+
+# Kill Chromium from anywhere
+bindsym $mod+Control+shift+j exec --no-startup-id sh ~/.local/bin/killc
+
+# Start program launcher
+bindsym $mod+space exec --no-startup-id rofi -show run
+bindsym $mod+Control+space exec --no-startup-id sh ~/.local/bin/unipicker
+
+# Navigate to the next/prev workspace
+bindsym $mod+Control+l workspace next
+bindsym $mod+Control+h workspace prev
+
+# Change focus
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+# Move focused window
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+# Split horizontal
+bindsym $mod+period split h
+
+# Split vertical
+bindsym $mod+minus split v
+
+# Toggle split
+bindsym $mod+y split toggle
+
+# Enter fullscreen mode
+bindsym $mod+f fullscreen toggle
+
+# Change container layout (stacked, tabbed, toggle split)
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+bindsym $mod+s layout stacking
+
+# Toggle tiling / floating
+bindsym $mod+d floating toggle
+
+# Toggle focus tiling / floating
+bindsym $mod+a focus mode_toggle
+
+# Focus the parent container (mode_toggle is enough)
+# bindsym $mod+c focus parent
+
+# Focus the child container (mode_toggle is enough)
+# bindsym $mod+Control+c focus child
+
+# Make the focused window a scratchpad
+bindsym $mod+Shift+i move scratchpad
+
+# Show the scratchpad window
+bindsym $mod+Control+i scratchpad show
+
+set $ws1  "1: >_ "
+set $ws2  "2: dev "
+set $ws3  "3: des "
+set $ws4  "4: doc "
+set $ws5  "5: net "
+set $ws6  "6: sys "
+set $ws7  "7: var "
+set $ws8  "8: com "
+set $ws9  "9: www "
+
+# Switch to workspace
+bindsym $mod+1 workspace $ws1
+bindsym $mod+2 workspace $ws2
+bindsym $mod+3 workspace $ws3
+bindsym $mod+4 workspace $ws4
+bindsym $mod+5 workspace $ws5
+bindsym $mod+6 workspace $ws6
+bindsym $mod+7 workspace $ws7
+bindsym $mod+8 workspace $ws8
+bindsym $mod+9 workspace $ws9
+
+# Move focused container to workspace
+bindsym $mod+Shift+1 move container to workspace $ws1; workspace $ws1
+bindsym $mod+Shift+2 move container to workspace $ws2; workspace $ws2
+bindsym $mod+Shift+3 move container to workspace $ws3; workspace $ws3
+bindsym $mod+Shift+4 move container to workspace $ws4; workspace $ws4
+bindsym $mod+Shift+5 move container to workspace $ws5; workspace $ws5
+bindsym $mod+Shift+6 move container to workspace $ws6; workspace $ws6
+bindsym $mod+Shift+7 move container to workspace $ws7; workspace $ws7
+bindsym $mod+Shift+8 move container to workspace $ws8; workspace $ws8
+bindsym $mod+Shift+9 move container to workspace $ws9; workspace $ws9
+
+bindsym $mod+Shift+p move container to workspace back_and_forth; \
+	workspace back_and_forth
+
+# Come back to the prev workspace (same bindsym)
+workspace_auto_back_and_forth yes
+bindsym $mod+Control+p workspace back_and_forth
+force_display_urgency_hint 0 ms
+focus_on_window_activation focus
+
+# Reload the configuration file
+bindsym $mod+Control+e reload
+
+# Restart i3 inplace (preserves your layout/session)
+bindsym $mod+Control+r restart
+
+# Block the screen (i3lock)
+bindsym $mod+Control+x exec i3lock --color "$base1"
+
+# Resize window mode
+set $mode_resize [Resize]
+
+bindsym $mod+r mode "$mode_resize"
+
+mode "$mode_resize" {
+	bindsym h resize shrink width 5 px
+	bindsym j resize grow height 5 px
+	bindsym k resize shrink height 5 px
+	bindsym l resize grow width 5 px
+
+	# back to normal: Enter or Escape
+	bindsym Return mode "default"
+	bindsym Escape mode "default"
+	bindsym Control+c mode "default"
+}
+
+bindsym $mod+0 mode "$mode_system"
+
+# System mode
+set $mode_system [L], [S], [R], [P]
+
+mode "$mode_system" {
+	bindsym l exec --no-startup-id i3-msg exit, mode "default"
+	bindsym s exec --no-startup-id systemctl suspend, mode "default"
+	bindsym r exec --no-startup-id sh ~/.config/i3/reboot.sh, mode "default"
+	bindsym p exec --no-startup-id sh ~/.config/i3/power.sh, mode "default"
+
+	# Exit system mode: "Enter" or "Escape"
+	bindsym Return mode "default"
+	bindsym Escape mode "default"
+	bindsym Control+c mode "default"
+}
+
+# Automatic alignment for floating windows
+bindsym $mod+c move absolute position center
+bindsym $mod+t exec --no-startup-id sh ~/.config/i3/winner.sh
+bindsym $mod+v exec --no-startup-id sh ~/.config/i3/winbig.sh
+bindsym $mod+m exec --no-startup-id sh ~/.config/i3/winside.sh
+
+# Hide/display i3 bar
+bindsym $mod+z bar mode toggle
+
+# Caps mode
+set $mode_caps [█]
+
+bindsym Caps_Lock mode "$mode_caps"
+bindsym Shift+Caps_Lock mode "$mode_caps"
+bindsym Control+Caps_Lock mode "$mode_caps"
+bindsym Control+Shift+Caps_Lock mode "$mode_caps"
+bindsym $alt+Caps_Lock mode "$mode_caps"
+bindsym $alt+Shift+Caps_Lock mode "$mode_caps"
+bindsym $alt+Control+Caps_Lock mode "$mode_caps"
+bindsym $alt+Control+Shift+Caps_Lock mode "$mode_caps"
+bindsym $mod+Caps_Lock mode "$mode_caps"
+bindsym $mod+Shift+Caps_Lock mode "$mode_caps"
+bindsym $mod+Control+Caps_Lock mode "$mode_caps"
+bindsym $mod+Control+Shift+Caps_Lock mode "$mode_caps"
+
+mode "$mode_caps" {
+	bindsym Caps_Lock mode "default"
+	bindsym Shift+Caps_Lock mode "default"
+	bindsym Control+Caps_Lock mode "default"
+	bindsym Control+Shift+Caps_Lock mode "default"
+	bindsym $alt+Caps_Lock mode "default"
+	bindsym $alt+Shift+Caps_Lock mode "default"
+	bindsym $alt+Control+Caps_Lock mode "default"
+	bindsym $alt+Control+Shift+Caps_Lock mode "default"
+	bindsym $mod+Caps_Lock mode "default"
+	bindsym $mod+Shift+Caps_Lock mode "default"
+	bindsym $mod+Control+Caps_Lock mode "default"
+	bindsym $mod+Control+Shift+Caps_Lock mode "default"
+}
+
+# Open applications
+bindsym $mod+Control+f exec --no-startup-id pcmanfm
+bindsym $mod+Control+k exec --no-startup-id urxvt -name 'vifm' -e 'vifm'
+bindsym $mod+Control+a exec --no-startup-id urxvt -name 'qalc' -e 'qalc'
+bindsym $mod+Control+m exec --no-startup-id urxvt -name 'maxima' -e 'maxima'
+bindsym $mod+Control+y exec --no-startup-id urxvt -name 'python' -e 'python3'
+bindsym $mod+Control+t exec --no-startup-id urxvt -name 'top' -e 'top'
+bindsym $mod+Control+v exec --no-startup-id urxvt -name 'alsa' -e 'alsamixer'
+bindsym $mod+Control+z exec --no-startup-id sh ~/.local/bin/jekw3m
+bindsym $mod+Control+w exec --no-startup-id sh ~/.local/bin/wimec "UNIX"
+bindsym $mod+Control+s exec --no-startup-id sh ~/.local/bin/ramuse
+bindsym $mod+Control+b exec --no-startup-id sh ~/.config/i3/xbacklight.sh
+bindsym $mod+p exec --no-startup-id sh ~/.config/i3/togglevifm.sh
+
+# Pulse Audio controls
+# Note: volume status is already in i3status
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume 0 +10%
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume 0 -10%
+bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute 1 toggle
+bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute 0 toggle
+bindsym $mod+u exec --no-startup-id pactl set-sink-mute 0 toggle
+bindsym $mod+i exec --no-startup-id pactl set-sink-volume 0 -10%
+bindsym $mod+o exec --no-startup-id pactl set-sink-volume 0 +10%
+
+# Cmus-remote
+bindsym $mod+Control+u exec --no-startup-id sh ~/.config/i3/cmus.sh
+bindsym XF86AudioPlay exec --no-startup-id sh ~/.config/i3/cmus.sh
+bindsym XF86AudioNext exec --no-startup-id cmus-remote -n && \
+	notify-send -t 2000 'Cmus: next'
+bindsym XF86AudioPrev exec --no-startup-id cmus-remote -r && \
+	notify-send -t 2000 'Cmus: prev'
+
+# Screen brightness controls
+bindsym XF86MonBrightnessUp exec --no-startup-id xbacklight -inc 10% && \
+	sh ~/.config/i3/xbacklight.sh
+bindsym XF86MonBrightnessDown exec --no-startup-id xbacklight -dec 10% && \
+	sh ~/.config/i3/xbacklight.sh
+bindsym $mod+Control+1 exec --no-startup-id xbacklight -set 10% && \
+	notify-send -t 2000 'Brigthness: 10%'
+bindsym $mod+Control+2 exec --no-startup-id xbacklight -set 20% && \
+	notify-send -t 2000 'Brigthness: 20%'
+bindsym $mod+Control+3 exec --no-startup-id xbacklight -set 30% && \
+	notify-send -t 2000 'Brigthness: 30%'
+bindsym $mod+Control+4 exec --no-startup-id xbacklight -set 40% && \
+	notify-send -t 2000 'Brigthness: 40%'
+bindsym $mod+Control+5 exec --no-startup-id xbacklight -set 50% && \
+	notify-send -t 2000 'Brigthness: 50%'
+bindsym $mod+Control+6 exec --no-startup-id xbacklight -set 60% && \
+	notify-send -t 2000 'Brigthness: 60%'
+bindsym $mod+Control+7 exec --no-startup-id xbacklight -set 70% && \
+	notify-send -t 2000 'Brigthness: 70%'
+bindsym $mod+Control+8 exec --no-startup-id xbacklight -set 80% && \
+	notify-send -t 2000 'Brigthness: 80%'
+bindsym $mod+Control+9 exec --no-startup-id xbacklight -set 90% && \
+	notify-send -t 2000 'Brigthness: 90%'
+bindsym $mod+Control+0 exec --no-startup-id xbacklight -set 100% && \
+	notify-send -t 2000 'Brigthness: 100%'
+
+# Screen color temperature
+bindsym $mod+$alt+1 exec --no-startup-id sct 1000 && \
+	notify-send -t 2000 'Sct: 1000 (lowest)'
+bindsym $mod+$alt+2 exec --no-startup-id sct 1611 && \
+	notify-send -t 2000 'Sct: 1611'
+bindsym $mod+$alt+3 exec --no-startup-id sct 2222 && \
+	notify-send -t 2000 'Sct: 2222'
+bindsym $mod+$alt+4 exec --no-startup-id sct 2833 && \
+	notify-send -t 2000 'Sct: 2833'
+bindsym $mod+$alt+5 exec --no-startup-id sct 3444 && \
+	notify-send -t 2000 'Sct: 3444'
+bindsym $mod+$alt+6 exec --no-startup-id sct 4056 && \
+	notify-send -t 2000 'Sct: 4056'
+bindsym $mod+$alt+7 exec --no-startup-id sct 4667 && \
+	notify-send -t 2000 'Sct: 4667'
+bindsym $mod+$alt+8 exec --no-startup-id sct 5278 && \
+	notify-send -t 2000 'Sct: 5278'
+bindsym $mod+$alt+9 exec --no-startup-id sct 5889 && \
+	notify-send -t 2000 'Sct: 5889'
+bindsym $mod+$alt+0 exec --no-startup-id sct && \
+	notify-send -t 2000 'Sct: 6500 (reset)'
+
+# Screen rotation
+bindsym $mod+$alt+j exec --no-startup-id sh ~/.config/i3/rotate.sh normal
+bindsym $mod+$alt+l exec --no-startup-id sh ~/.config/i3/rotate.sh left
+bindsym $mod+$alt+h exec --no-startup-id sh ~/.config/i3/rotate.sh right
+bindsym $mod+$alt+k exec --no-startup-id sh ~/.config/i3/rotate.sh inverted
+
+# Invert screen colors
+bindsym $mod+$alt+i exec --no-startup-id xcalib -i -a
+
+# Screenshot
+# - Fullscreen:
+bindsym --release $mod+Print exec --no-startup-id scrot \
+	~/Shots/`date +%Y-%m-%d_%H:%M:%S`.png && notify-send -t 2000 'Screenshot!'
+# - Select region:
+bindsym --release $mod+Shift+Print exec --no-startup-id scrot -s \
+	~/Shots/`date +%Y-%m-%d_%H:%M:%S`.png && notify-send -t 2000 'Screenshot!'
+# - Focused window, with border
+bindsym --release $mod+Control+Print exec --no-startup-id scrot -ub \
+	~/Shots/`date +%Y-%m-%d_%H:%M:%S`.png && notify-send -t 2000 'Screenshot!'
+
+# Compton control
+bindsym $mod+Control+g exec --no-startup-id \
+	pkill compton && notify-send -t 2000 'Compton killed.'
+bindsym $mod+Shift+g exec --no-startup-id \
+	compton -b --config ~/.compton.conf && notify-send -t 2000 'Compton restarted.'
+
+# Toggle monitor modes
+bindsym $mod+$alt+t exec --no-startup-id bash ~/.config/i3/togglexrandr.sh
+
+# -----------------------------------------------------------------------------
+# Mouse
+# -----------------------------------------------------------------------------
+
+# Drag and resize floating windows
+floating_modifier $mod
+
+# Middle button + $mod over any part of the window
+bindsym --whole-window $mod+button2 kill
+
+# -----------------------------------------------------------------------------
+# Assignments
+# -----------------------------------------------------------------------------
+
+# 1: >_
+assign [class="^URxvt$" instance="^rxvt$"] $ws1
+
+# 2: dev
+assign [class="^Gvim$"] $ws2
+assign [class="^Emacs$"] $ws2
+assign [class="^Atom$"] $ws2
+assign [class="^Eclipse$"] $ws2
+assign [class="^QtCreator$"] $ws2
+assign [class="^Codeblocks$"] $ws2
+
+# 3: des
+assign [class="^Glade$"] $ws3
+assign [class="^Designer$"] $ws3
+assign [class="^Dia$"] $ws3
+assign [class="^Gimp$"] $ws3
+assign [class="^Inkscape$"] $ws3
+assign [class="^Blender$"] $ws3
+assign [class="^QCAD$"] $ws3
+assign [class="^LibreCAD$"] $ws3
+assign [class="^Freecad$"] $ws3
+assign [class="^Skychart$"] $ws3
+assign [class="^kstars$"] $ws3
+assign [class="^stellarium$"] $ws3
+
+# 4: doc
+assign [class="^Apvlv$"] $ws4
+assign [class="^Zathura$"] $ws4
+assign [class="^PdfMod$"] $ws4
+assign [class="^FBReader$"] $ws4
+assign [class="^libreoffice-startcenter$"] $ws4
+assign [class="^calibre$"] $ws4
+
+# 5: net
+assign [class="^Filezilla$"] $ws5
+assign [class="^Deluge$"] $ws5
+assign [class="^Amule$"] $ws5
+
+# 6: sys
+assign [class="^Pcmanfm$"] $ws6
+assign [class="^URxvt$" instance="^vifm$"] $ws6
+
+# 7: var
+assign [class="^VirtualBox Manager$"] $ws7
+assign [class="^Wxmaxima$"] $ws7
+assign [class="^mpv$"] $ws7
+assign [class="^ioquake3$"] $ws7
+
+# 8: com
+assign [class="^Skype$"] $ws8
+assign [class="^TelegramDesktop$"] $ws8
+
+# 9: www
+assign [class="^Firefox$"] $ws9
+assign [class="^Firefox-esr$"] $ws9
+assign [class="^Navigator$"] $ws9
+assign [class="^Chromium$"] $ws9
+assign [class="^qutebrowser$"] $ws9
+
+# Specific windows
+for_window [window_role="pop-up"] floating enable
+for_window [class="Lxappearance"] floating enable border normal
+for_window [title="About Mozilla Firefox"] floating enable border normal
+for_window [class="SpeedCrunch"] floating enable border normal
+for_window [class="Qalculate-gtk"] floating enable border normal
+for_window [class="Glade-previewer"] floating enable border normal
+for_window [class="feh"] floating enable border normal
+for_window [class="Sxiv"] floating enable border normal
+for_window [class="^URxvt$" instance="^qalc$"] floating enable border 1px
+for_window [class="^URxvt$" instance="^maxima$"] floating enable border 1px
+for_window [class="^URxvt$" instance="^python$"] floating enable border 1px
+for_window [class="^URxvt$" instance="^vifm$"] focus
+for_window [class="^URxvt$" instance="^top$"] floating enable border 1px
+for_window [class="^URxvt$" instance="^alsa$"] floating enable border 1px
+for_window [class="^URxvt$" instance="^rxvt$"] focus
+for_window [class="^URxvt$" instance="^rxvt-float$"] floating enable border 1px
+for_window [class="^URxvt$" instance="^vifm-float$"] floating enable border 1px
+
+# Force focus
+for_window [class="^libreoffice-startcenter$"] focus
+for_window [class="^Designer$"] focus
+for_window [class="^Zathura$"] focus
+for_window [class="^Dia$"] focus
+for_window [class="^mpv$"] focus
+for_window [class="^TelegramDesktop$"] focus
+for_window [class="^calibre$"] focus
+
+# Switch to workspace with urgent window automatically
+for_window [urgent=latest] focus
+
+# -----------------------------------------------------------------------------
+# Look and feel
+# -----------------------------------------------------------------------------
+
+# class                 border backg. text   indic. child_border
+client.focused          $acc50 $acc50 $base2 $aco50 $acc50
+client.focused_inactive $base3 $base3 $base2 $base3
+client.unfocused        $base2 $base2 $base3 $base2
+client.urgent           $acg50 $acg50 $base1 $acg50
+client.placeholder      $base2 $base2 $base4 $base2 $base2
+client.background       $base2
+
+bar {
+	position top
+	separator_symbol "¦"
+	strip_workspace_numbers no
+	font pango: Terminus 10
+	status_command i3status -c ~/.config/i3/i3status.conf
+	colors {
+		background $base2
+		statusline $base4
+		separator  $acc50
+		focused_workspace  $base2 $base2 $acc50
+		active_workspace   $base2 $base2 $acb50
+		inactive_workspace $base2 $base2 $base3
+		urgent_workspace   $base2 $base2 $acg50
+		binding_mode       $base2 $base2 $aco50
+	}
+}
+
+# -----------------------------------------------------------------------------
+# Startup
+# -----------------------------------------------------------------------------
+
+#exec --no-startup-id /usr/bin/lxpolkit
+exec --no-startup-id compton -b --config ~/.compton.conf
+exec --no-startup-id bash ~/.config/i3/autoxrandr.sh
+#exec --no-startup-id xmodmap ~/.Xmodmap
+
+#exec --no-startup-id setcursor
+#exec --no-startup-id setxkbmap es
+#exec --no-startup-id udiskie -s
+#exec --no-startup-id megasync
+#exec --no-startup-id numlockx on
+# exec --no-startup-id volumeicon
+# exec --no-startup-id wicd-gtk -t
+
+#Set default volume
+exec --no-startup-id pactl set-sink-volume 0 '30%'
+
+# Set LCD brightness
+exec --no-startup-id xbacklight -set 50%
+
+# Keyboard: set initial delay 300ms, repeat 35ms
+exec --no-startup-id xset r rate 800 30
+
+# vim:filetype=i3config

@@ -1,0 +1,12 @@
+[user]
+	email 	= ianseddon55@gmail.com
+	name  	= Ian Seddon
+
+[core]
+	editor	= nvim
+	pager	= less -x4
+
+[color]
+	branch	= auto
+	diff	= auto
+	status	= auto

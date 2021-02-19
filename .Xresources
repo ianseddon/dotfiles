@@ -1,0 +1,87 @@
+! ------------------------------------------------------------
+! Color Theme
+! ------------------------------------------------------------
+
+#include "/home/ian/devel/dotfiles/nord.Xresources"
+
+! ------------------------------------------------------------
+! XFT
+! ------------------------------------------------------------
+
+! Xft.dpi       : 96
+Xft.antialias : true
+Xft.hinting   : true
+Xft.rgba      : rgb
+Xft.autohint  : false
+Xft.hintstyle : hintfull
+Xft.lcdfilter : lcddefault
+
+! ------------------------------------------------------------
+! URxvt
+! ------------------------------------------------------------
+
+URxvt*termName       : screen-256color
+URxvt*font           : xft:Fira Code:size=12
+URxvt*letterSpace    : 0
+URxvt*internalBorder : 1
+URxvt*scrollBar      : false
+URxvt*pointerBlank   : true
+URxvt*hold           : false
+URxvt*iso14755       : false
+URxvt*iso14755_52    : false
+URxvt*loginShell     : true
+URxvt*buffered       : true
+URxvt*depth          : 32
+
+! ------------------------------------------------------------
+! URxvt plugins
+! ------------------------------------------------------------
+
+! Perl extensions
+URxvt.perl-ext             : default,url-select,resize-font,unichr,clipboard
+
+! Plugin: url-select
+URxvt.keysym.Control-O     : perl:url-select:select_next
+URxvt.url-select.launcher  : tmux new-window w3m
+URxvt.url-select.underline : true
+URxvt.clipboard.autocopy   : true
+URxvt.keysym.Control-C     : perl:clipboard:copy
+URxvt.keysym.Control-V     : perl:clipboard:paste
+! Press 'y' to copy the selected URL to PRIMARY and clipboard
+
+! Plugin: resize-font
+URxvt.keysym.Control-H : resize-font:smaller
+URxvt.keysym.Control-L : resize-font:bigger
+URxvt.keysym.Control-R : resize-font:reset
+
+! ------------------------------------------------------------
+! Rofi
+! ------------------------------------------------------------
+
+rofi.modi              : run,window
+rofi.terminal          : /usr/bin/urxvtc
+rofi.run-shell-command : /usr/bin/urxvtc -e '{cmd}'
+rofi.ssh-command       : tmux split-window -h -p 50 '{ssh-client} {host}'
+rofi.sidebar-mode      : true
+rofi.fuzzy             : true
+rofi.font              : Fira\ Code\ 12
+rofi.location          : 0
+rofi.width             : 32
+rofi.padding           : 2
+rofi.borderwidth       : 1
+rofi.columns           : 1
+rofi.lines             : 8
+rofi.separator-style   : none
+
+! Key bindings
+rofi.kb-accept-entry        : Control+m,Return,KP_Enter
+rofi.kb-cancel              : Escape,Control+c
+rofi.kb-mode-next           : Control+l
+rofi.kb-mode-previous       : Control+h
+rofi.kb-row-down            : Control+j
+rofi.kb-row-up              : Control+k
+rofi.kb-remove-to-eol       : Control+y
+rofi.kb-remove-to-sol       : Control+u
+rofi.kb-remove-char-back    : Control+s,BackSpace
+rofi.kb-remove-char-forward : Control+d,Delete
+rofi.bw                     : 2

@@ -13,5 +13,17 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
-# Customize to your needs...
+# nvm setup
 source /usr/share/nvm/init-nvm.sh
+
+# pyenv setup
+eval "$(pyenv init -)"
+
+# virtualenvwrapper setup
+PROJECT_HOME="$HOME/devel"
+
+# add poetry packages to PATH
+export PATH="$HOME/.poetry/bin:$PATH"
+
+# add pip packages to PATH
+export PATH="$HOME/.local/bin:$PATH"

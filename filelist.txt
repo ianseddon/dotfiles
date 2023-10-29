@@ -2,8 +2,7 @@
 .zpreztorc
 .config/fontconfig/fonts.conf
 .config/i3/config
-.config/polybar/config.ini
-.config/polybar/launch.sh
 .config/picom.conf
 .config/rofi/config.rasi
 .config/rofi/nord.rasi
+.config/polybar

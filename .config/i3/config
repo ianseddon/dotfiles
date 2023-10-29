@@ -360,6 +360,8 @@ exec_always --no-startup-id nitrogen --restore
 #####################################################################################################################
 #####################################################################################################################
 
+exec_always --no-startup-id $HOME/.config/polybar/launch.sh dark
+
     ##START THEMING WM
 
     # Window color settings

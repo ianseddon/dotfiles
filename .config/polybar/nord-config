@@ -63,7 +63,7 @@ wm-restack = i3
 # mullvad-status: showing mullvad status
 
 # Top modules
-top-left = i3
+top-left = 
 top-center = spotify
 top-right = temperature pulseaudio network-short date
 

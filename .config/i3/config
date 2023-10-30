@@ -240,6 +240,8 @@ mode "resize" {
 #################           autostart   -    execute applications at boot time                      #################
 #####################################################################################################################
 
+# Configure monitors
+exec --no-startup-id $HOME/.screenlayout/two-monitor.sh
 
 #Authentication dialog (polkit-gnome)
 exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
@@ -262,15 +264,14 @@ bindsym Print exec maim -s --format png /dev/stdout | xclip -selection clipboard
 bindsym $mod+Print exec maim --select | tee ~/Pictures/$(date +%s).png | xclip -sel c -t image/png
 
 
-
 #####################################################################################################################
 #################                          audio settings                                           #################
 #####################################################################################################################
 
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
-bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
-bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
+# bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
+# bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
+# bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
+# bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
 
 
 #####################################################################################################################
@@ -278,11 +279,8 @@ bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOU
 #####################################################################################################################
 
 # bar toggle, hide or show
-bindsym $mod+b bar mode toggle
-
-bindsym $mod+i bar mode invisible
-
-
+#bindsym $mod+b bar mode toggle
+#bindsym $mod+i bar mode invisible
 
 
 #####################################################################################################################
@@ -292,11 +290,8 @@ bindsym $mod+i bar mode invisible
 for_window [class="^.*"] border pixel 1
 gaps inner 10
 gaps outer 1
-#smart_gaps on
-#smart_borders on
-
-
-
+smart_gaps on
+smart_borders on
 
 
 #####################################################################################################################
@@ -347,7 +342,6 @@ mode "$mode_gaps_outer" {
 #################                          picom and wallpaper                                      #################
 #####################################################################################################################
 
-exec_always --no-startup-id $HOME/.screenlayout/two-monitor.sh
 #if you want transparency on non-focused windows, ...
 exec_always --no-startup-id picom --config ~/.config/picom.conf
 exec_always --no-startup-id nitrogen --restore

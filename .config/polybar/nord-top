@@ -51,44 +51,6 @@ label-urgent-padding = 2
 label-separator = |
 label-separator-foreground = ${colors.buffer}
 
-[module/bspwm]
-type = internal/bspwm
-
-ws-icon-0 = ${config.ws-icon-0}
-ws-icon-1 = ${config.ws-icon-1}
-ws-icon-2 = ${config.ws-icon-2}
-ws-icon-3 = ${config.ws-icon-3}
-ws-icon-4 = ${config.ws-icon-4}
-ws-icon-5 = ${config.ws-icon-5}
-ws-icon-6 = ${config.ws-icon-6}
-ws-icon-7 = ${config.ws-icon-7}
-ws-icon-8 = ${config.ws-icon-8}
-ws-icon-9 = ${config.ws-icon-9}
-ws-icon-default = ${config.ws-icon-default}
-
-label-focused = %icon%
-label-focused-underline = ${colors.nord7}
-label-focused-foreground = ${colors.nord7}
-label-focused-padding = 2
-
-label-occupied = %icon%
-label-occupied-underline = ${colors.nord9}
-label-occupied-foreground = ${colors.nord9}
-label-occupied-padding = 2
-
-label-empty = %icon%
-label-empty-foreground = ${colors.buffer}
-label-empty-padding = 2
-
-label-urgent = 
-label-urgent-foreground = ${colors.urgent}
-label-urgent-background = ${colors.foreground}
-label-urgent-padding = 2
-
-; seperator
-label-separator = |
-label-separator-foreground = ${colors.buffer}
-
 [module/workspace-name]
 type = internal/i3
 strip-wsnumbers = true
@@ -400,3 +362,38 @@ exec = ~/.config/polybar/scripts/mullvad.sh
 interval = 5
 
 click-left = ${config.mullvad-click-left}
+
+
+[module/temperature]
+type = internal/temperature
+
+thermal-zone = ${config.thermal-zone}
+
+base-temperature = ${config.base-temperature}
+
+warn-temperature = ${config.warn-temperature}
+
+; Format
+format = <ramp> <label>
+format-warn = <label-warn>
+format-warn-background = ${colors.foreground}
+
+label-warn =  %temperature-c%
+label-warn-padding = 1
+label-warn-foreground = ${colors.urgent}
+label-warn-background = ${colors.foreground}
+
+ramp-0 = 
+ramp-1 = 
+ramp-2 = 
+ramp-3 = 
+ramp-4 = 
+
+
+ramp-0-foreground = ${colors.nord8}
+ramp-1-foreground = ${colors.nord8}
+ramp-2-foreground = ${colors.success}
+ramp-3-foreground = ${colors.success}
+ramp-4-foreground = ${colors.warning}
+
+interval = 10

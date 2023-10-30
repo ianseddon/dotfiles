@@ -347,6 +347,7 @@ mode "$mode_gaps_outer" {
 #################                          picom and wallpaper                                      #################
 #####################################################################################################################
 
+exec_always --no-startup-id $HOME/.screenlayout/two-monitor.sh
 #if you want transparency on non-focused windows, ...
 exec_always --no-startup-id picom --config ~/.config/picom.conf
 exec_always --no-startup-id nitrogen --restore

@@ -12,7 +12,7 @@
 
 # bar position, apply globally
 width = 100%
-height = 3%
+height = 2%
 offset-x = 0
 offset-y = 0
 radius = 0.0
@@ -27,7 +27,7 @@ fixed-center = true
 # if the problem is solved.
 # If problem still persist, look at Polybar's wiki for more options.
 override-redirect = false
-wm-restack = bspwm
+wm-restack = i3
 
 # -------------------------------------------
 # Modules
@@ -65,7 +65,7 @@ wm-restack = bspwm
 # Top modules
 top-left = i3
 top-center = spotify
-top-right = keyboard clipmenu-widget pulseaudio network-short date
+top-right = temperature pulseaudio network-short date
 
 # Bottom modules
 bottom-left = weather
@@ -74,15 +74,15 @@ bottom-right = temperature
 
 # Position of tray icons. Avaliable options are left/center/right and none.
 # If the tray is put at the bottom bar, then systray-top must set to none, and vice versa.
-systray-top = none
-systray-bottom = right
+systray-top = left
+systray-bottom = none
 
 # -------------------------------------------
 # Styles
 # -------------------------------------------
 
 # Under-/overline pixel size
-line-size = 6
+line-size = 2
 
 # -------------------------------------------
 # Modules Configurations
@@ -110,7 +110,7 @@ ws-icon-default = 
 # if some of them doesn't suit your environment, you can change
 # it from here.
 # network interface, check by `ip link show`
-interface = wlo0
+interface = wlo1
 
 ## battery
 # when the current battery capacity excess this value,
@@ -134,11 +134,13 @@ mpd-host = 127.0.0.1
 mpd-port = 6600
 
 ## temperature
-thermal-zone = 3
+thermal-zone = 2
 # Base temperature for where to start the ramp (in degrees celsius)
 base-temperature = 20
 # Threshold temperature to display warning label (in degrees celsius)
 warn-temperature = 70
+
+hwmon-path = /sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input
 
 ## github
 # GitHub personal token. Select at least `notifications` option.
@@ -159,4 +161,4 @@ notify-click-left = xdotool key control+grave
 # on different bars
 #
 # Default: false
-i3-pin-workspaces = false
+i3-pin-workspaces = true

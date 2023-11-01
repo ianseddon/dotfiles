@@ -31,6 +31,7 @@ zstyle ':prezto:*:*' color 'yes'
 # The order matters.
 zstyle ':prezto:load' pmodule \
   'git' \
+  'pacman' \
   'environment' \
   'terminal' \
   'editor' \
@@ -41,6 +42,7 @@ zstyle ':prezto:load' pmodule \
   'completion' \
   'syntax-highlighting' \
   'history-substring-search' \
+  'autosuggestions' \
   'prompt'
 
 #
@@ -48,8 +50,8 @@ zstyle ':prezto:load' pmodule \
 #
 
 # Set the query found color.
-zstyle ':prezto:module:autosuggestions' color 'yes'
-zstyle ':prezto:module:autosuggestions:color' found 'fg=10'
+#zstyle ':prezto:module:autosuggestions' color 'yes'
+#zstyle ':prezto:module:autosuggestions:color' found 'fg=1'
 
 #
 # Completions
@@ -104,7 +106,7 @@ zstyle ':prezto:module:editor' key-bindings 'emacs'
 #
 
 # Set the query found color.
-# zstyle ':prezto:module:history-substring-search:color' found ''
+#zstyle ':prezto:module:history-substring-search:color' found 'fg=10'
 
 # Set the query not found color.
 # zstyle ':prezto:module:history-substring-search:color' not-found ''
@@ -116,13 +118,13 @@ zstyle ':prezto:module:editor' key-bindings 'emacs'
 # zstyle ':prezto:module:history-substring-search' case-sensitive 'yes'
 
 # Enable search for fuzzy matches.
-# zstyle ':prezto:module:history-substring-search' fuzzy 'yes'
+zstyle ':prezto:module:history-substring-search' fuzzy 'yes'
 
 # Enable search uniqueness.
-# zstyle ':prezto:module:history-substring-search' unique 'yes'
+zstyle ':prezto:module:history-substring-search' unique 'yes'
 
 # Enable prefixed search.
-# zstyle ':prezto:module:history-substring-search' prefixed 'yes'
+zstyle ':prezto:module:history-substring-search' prefixed 'yes'
 
 #
 # macOS

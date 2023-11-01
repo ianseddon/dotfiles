@@ -246,7 +246,6 @@ exec --no-startup-id $HOME/.screenlayout/two-monitor.sh
 #Authentication dialog (polkit-gnome)
 exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 
-
 #####################################################################################################################
 #################                          applications keyboard shortcuts                          #################
 #####################################################################################################################
@@ -343,7 +342,7 @@ mode "$mode_gaps_outer" {
 #####################################################################################################################
 
 #if you want transparency on non-focused windows, ...
-exec_always --no-startup-id picom --config ~/.config/picom.conf
+#exec_always --no-startup-id picom --config ~/.config/picom.conf
 exec_always --no-startup-id nitrogen --restore
 
 

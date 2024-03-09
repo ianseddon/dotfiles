@@ -4,7 +4,7 @@ command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 
 # poetry
-PATH=$HOME/.local/bin:$PATH
+#PATH=$HOME/.local/bin:$PATH
 
 # nvm
 source /usr/share/nvm/init-nvm.sh
@@ -26,3 +26,25 @@ alias vim='nvim'
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+# cargo
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# composer
+export PATH="$HOME/.config/composer/vendor/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/home/ian/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+ j*) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+# zoxide
+alias cd='z'
+eval "$(zoxide init zsh)"
+# zoxide end
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /usr/bin/terraform terraform

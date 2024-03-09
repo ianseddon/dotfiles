@@ -66,7 +66,7 @@ bindsym $mod+Shift+9 move container to workspace 9
 
 # start dmenu
 #bindsym $mod+d exec --no-startup-id dmenu_run -i -nb '#1f222d' -nf '#81a1c1' -sb '#81a1c1' -sf '#1f222d' -fn 'OperatorMonoBook:bold:pixelsize=18'
-bindsym $mod+space exec --no-startup-id rofi -show drun
+bindsym $mod+space exec --no-startup-id sh $HOME/.config/rofi/bin/launcher
 
 
 #####################################################################################################################
@@ -250,7 +250,7 @@ exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 #################                          applications keyboard shortcuts                          #################
 #####################################################################################################################
 
-bindsym $mod+Return exec --no-startup-id alacritty;focus
+bindsym $mod+Return exec --no-startup-id kitty;focus
 
 bindsym control+mod1+u exec --no-startup-id pavucontrol
 
@@ -259,9 +259,7 @@ bindsym control+mod1+u exec --no-startup-id pavucontrol
 #################                          screenshots                                              #################
 #####################################################################################################################
 
-bindsym Print exec maim -s --format png /dev/stdout | xclip -selection clipboard -t image/png -i
-bindsym $mod+Print exec maim --select | tee ~/Pictures/$(date +%s).png | xclip -sel c -t image/png
-
+bindsym --release $mod+z exec sh $HOME/.config/rofi/bin/screenshot
 
 #####################################################################################################################
 #################                          audio settings                                           #################
@@ -342,7 +340,7 @@ mode "$mode_gaps_outer" {
 #####################################################################################################################
 
 #if you want transparency on non-focused windows, ...
-#exec_always --no-startup-id picom --config ~/.config/picom.conf
+exec_always --no-startup-id picom --config ~/.config/picom.conf
 exec_always --no-startup-id nitrogen --restore
 
 
@@ -354,7 +352,7 @@ exec_always --no-startup-id nitrogen --restore
 #####################################################################################################################
 #####################################################################################################################
 
-exec_always --no-startup-id $HOME/.config/polybar/launch.sh dark
+#exec_always --no-startup-id $HOME/.config/polybar/launch.sh dark
 
     ##START THEMING WM
 

@@ -1,9 +1,8 @@
 ; vim:ft=dosini
 [global-wm]
-include-file = ../colors/dark-colors
-include-file = ../nord-top
-include-file = ../nord-down
-include-file = ../nord-config
+include-file = ../colors/catpuccin-mocha.ini
+include-file = ../bar-top.ini
+include-file = ../config.ini
 
 [bar/base]
 theme = dark
@@ -35,7 +34,7 @@ cursor-scroll = ns-resize
 
 enable-ipc = true
 
-[bar/nord-top]
+[bar/top]
 inherit = bar/base
 
 module-margin = 1
@@ -51,22 +50,3 @@ modules-center = ${config.top-center}
 modules-right = ${config.top-right}
 
 tray-position = ${config.systray-top}
-
-[bar/nord-down]
-inherit = bar/base
-
-bottom = true
-
-module-margin = 2
-
-font-0 = Fira Code:size=10
-font-1 = FontAwesome6FreeSolid:pixelsize=10;1
-font-2 = FontAwesome6Brands:pixelsize=6;1
-font-3 = Weather Icons:style=Regular:size=10;1
-font-4 = Fira Code:pixelsize=10
-
-modules-left = ${config.bottom-left}
-modules-center = ${config.bottom-center}
-modules-right = ${config.bottom-right}
-
-tray-position = ${config.systray-bottom}

@@ -1,10 +1,8 @@
-# pyenv
-export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
-
 # poetry
 #PATH=$HOME/.local/bin:$PATH
+
+# rye
+source "$HOME/.rye/env"
 
 # nvm
 source /usr/share/nvm/init-nvm.sh
@@ -32,6 +30,9 @@ export PATH="$HOME/.cargo/bin:$PATH"
 
 # composer
 export PATH="$HOME/.config/composer/vendor/bin:$PATH"
+
+# go
+export PATH="$HOME/go/bin:$PATH"
 
 # pnpm
 export PNPM_HOME="/home/ian/.local/share/pnpm"

@@ -1,38 +1,28 @@
+-- This is where plugins that require no/minimal configuration are placed.
+-- More extensive configurations should be placed in their own files.
 return {
+  "folke/neodev.nvim",
   {
-    "stevearc/conform.nvim",
-    -- event = 'BufWritePre', -- uncomment for format on save
-    config = function()
-      require "configs.conform"
-    end,
+    "williamboman/mason.nvim",
+    opts = {
+      -- Prefer mason-lspconfig over this if possible.
+      ensure_installed = {
+        -- Python
+        "debugpy",
+        "mypy",
+        -- Lua
+        "stylua",
+        -- Shell
+        "shellcheck",
+        "shfmt",
+        -- TOML
+        "taplo",
+      },
+    },
   },
-
-  -- These are some examples, uncomment them if you want to see them work!
-  -- {
-  --   "neovim/nvim-lspconfig",
-  --   config = function()
-  --     require("nvchad.configs.lspconfig").defaults()
-  --     require "configs.lspconfig"
-  --   end,
-  -- },
-  --
-  -- {
-  -- 	"williamboman/mason.nvim",
-  -- 	opts = {
-  -- 		ensure_installed = {
-  -- 			"lua-language-server", "stylua",
-  -- 			"html-lsp", "css-lsp" , "prettier"
-  -- 		},
-  -- 	},
-  -- },
-  --
-  -- {
-  -- 	"nvim-treesitter/nvim-treesitter",
-  -- 	opts = {
-  -- 		ensure_installed = {
-  -- 			"vim", "lua", "vimdoc",
-  --      "html", "css"
-  -- 		},
-  -- 	},
-  -- },
+  {
+    "neovim/nvim-lspconfig",
+    -- This must be setup after mason-lspconfig
+    dependencies = { "williamboman/mason-lspconfig.nvim" },
+  },
 }

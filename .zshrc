@@ -48,14 +48,15 @@ zinit light Aloxaf/fzf-tab
 # Add in snippets
 zinit snippet OMZP::archlinux # aliases / functions
 zinit snippet OMZP::aws # completions
-zinit snippet OMZP::bun # completions
+#zinit snippet OMZP::bun # completions
 zinit snippet OMZP::command-not-found # suggest packages
 zinit snippet OMZP::git # aliases / functions
+zinit snippet OMZP::helm # aliases / completions
 zinit snippet OMZP::kubectl # completions
 zinit snippet OMZP::kubectx # prompt info
 zinit snippet OMZP::npm # aliases / completions
 zinit snippet OMZP::nvm # completions / source
-zinit snippet OMZP::poetry # completions
+#zinit snippet OMZP::poetry # completions
 zinit snippet OMZP::sudo # 2x escape to prefix w/ sudo
 
 # Load completions

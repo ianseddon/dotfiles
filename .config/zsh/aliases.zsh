@@ -5,4 +5,4 @@ alias g='git'
 alias less='bat'
 alias ls='exa --color=auto --icons'
 alias mkdir='mkdir -p'
-
+alias vim='nvim'

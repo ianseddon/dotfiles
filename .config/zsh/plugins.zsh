@@ -25,15 +25,6 @@ autoload -U compinit && compinit
 zinit cdreplay -q
 
 ##
-## Prompt
-##
-
-# powerlevel10k
-zinit ice depth=1; zinit light romkatv/powerlevel10k
-# powerlevel10k prompt (pure w/ zsh-async)
-zinit ice pick"async.zsh" src"pure.zsh"; zinit light sindresorhus/pure
-
-##
 ## Plugins
 ##
 zinit light-mode for \
@@ -132,6 +123,6 @@ zinit snippet OMZP::npm # aliases / completions
 zinit snippet OMZP::nvm # completions / source
 #zinit snippet OMZP::poetry # completions
 zinit snippet OMZP::sudo # 2x escape to prefix w/ sudo
-zinit snippet OMZP::tmux # aliases / autostart
+#zinit snippet OMZP::tmux # aliases / autostart
 
 # vim:ft=zsh

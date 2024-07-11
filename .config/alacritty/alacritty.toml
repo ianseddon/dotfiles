@@ -1,7 +1,13 @@
 import = ["~/.config/alacritty/themes/everforest_dark.toml"]
 
 [window]
-padding = { x = 0, y = 0 }
+dynamic_padding = false
+opacity = 0.9
+blur = true
+
+[window.padding]
+x = 0
+y = 0
 
 [font]
 size = 7

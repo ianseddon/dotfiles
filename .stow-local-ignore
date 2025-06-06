@@ -1,0 +1,39 @@
+# Stow ignore file
+# Files and directories listed here will not be symlinked
+
+# Git files
+\.git
+\.gitignore
+\.gitmodules
+
+# Documentation
+README.*
+readme.*
+CHANGELOG.*
+changelog.*
+LICENSE.*
+license.*
+
+# Scripts
+install\.sh
+bootstrap\.sh
+setup\.sh
+
+# Backup files
+.*~
+.*\.bak
+.*\.backup
+.*\.orig
+
+# OS files
+\.DS_Store
+Thumbs\.db
+desktop\.ini
+
+# Editor files
+.*\.swp
+.*\.swo
+.*\.tmp
+
+# Logs
+.*\.log 

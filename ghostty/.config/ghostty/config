@@ -1,0 +1,39 @@
+# Scrolling
+mouse-scroll-multiplier = 0.5
+
+# Window appearance
+window-decoration = true
+window-padding-x = 8
+window-padding-y = 8
+
+# Theme and colors
+#theme = everforest-dark
+
+# Font settings
+font-family = "monospace" # use fontconfig default
+#font-size = 12
+
+# Shell settings
+shell-integration = fish
+shell-integration-features = cursor,sudo,title
+
+# Performance
+auto-update = check
+
+# Clipboard
+clipboard-read = allow
+clipboard-write = allow
+
+# Terminal features
+confirm-close-surface = false
+quit-after-last-window-closed = true
+
+# Cursor
+cursor-style = block
+cursor-style-blink = true
+
+# Bell
+desktop-notifications = true
+
+# Mouse
+mouse-hide-while-typing = true

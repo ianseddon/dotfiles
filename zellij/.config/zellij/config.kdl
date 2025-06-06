@@ -1,0 +1,182 @@
+// Zellij configuration file
+// ~/.config/zellij/config.kdl
+
+// Theme
+theme "everforest-dark"
+
+// Default shell
+default_shell "fish"
+
+// Keybindings
+// keybinds clear-defaults=true {
+//     normal {
+//         // Basic navigation
+//         bind "Alt h" "Alt Left" { MoveFocus "Left"; }
+//         bind "Alt l" "Alt Right" { MoveFocus "Right"; }
+//         bind "Alt j" "Alt Down" { MoveFocus "Down"; }
+//         bind "Alt k" "Alt Up" { MoveFocus "Up"; }
+//
+//         // Tab management
+//         bind "Alt t" { NewTab; }
+//         bind "Alt w" { CloseTab; }
+//         bind "Alt 1" { GoToTab 1; }
+//         bind "Alt 2" { GoToTab 2; }
+//         bind "Alt 3" { GoToTab 3; }
+//         bind "Alt 4" { GoToTab 4; }
+//         bind "Alt 5" { GoToTab 5; }
+//         bind "Alt 6" { GoToTab 6; }
+//         bind "Alt 7" { GoToTab 7; }
+//         bind "Alt 8" { GoToTab 8; }
+//         bind "Alt 9" { GoToTab 9; }
+//         bind "Alt Tab" { ToggleTab; }
+//
+//         // Pane management
+//         bind "Alt |" { NewPane "Right"; }
+//         bind "Alt -" { NewPane "Down"; }
+//         bind "Alt x" { CloseFocus; }
+//         bind "Alt f" { ToggleFocusFullscreen; }
+//         bind "Alt z" { TogglePaneFrames; }
+//
+//         // Resize mode
+//         bind "Alt r" { SwitchToMode "Resize"; }
+//
+//         // Scroll mode
+//         bind "Alt s" { SwitchToMode "Scroll"; }
+//
+//         // Session management
+//         bind "Alt d" { Detach; }
+//         bind "Alt q" { Quit; }
+//
+//         // Search
+//         bind "Alt /" { SwitchToMode "Search"; }
+//     }
+//
+//     resize {
+//         bind "Ctrl c" { SwitchToMode "Normal"; }
+//         bind "h" "Left" { Resize "Increase Left"; }
+//         bind "j" "Down" { Resize "Increase Down"; }
+//         bind "k" "Up" { Resize "Increase Up"; }
+//         bind "l" "Right" { Resize "Increase Right"; }
+//         bind "H" { Resize "Decrease Left"; }
+//         bind "J" { Resize "Decrease Down"; }
+//         bind "K" { Resize "Decrease Up"; }
+//         bind "L" { Resize "Decrease Right"; }
+//         bind "=" "+" { Resize "Increase"; }
+//         bind "-" { Resize "Decrease"; }
+//     }
+//
+//     scroll {
+//         bind "Ctrl c" { SwitchToMode "Normal"; }
+//         bind "j" "Down" { ScrollDown; }
+//         bind "k" "Up" { ScrollUp; }
+//         bind "Ctrl f" "PageDown" "Right" "l" { PageScrollDown; }
+//         bind "Ctrl b" "PageUp" "Left" "h" { PageScrollUp; }
+//         bind "d" { HalfPageScrollDown; }
+//         bind "u" { HalfPageScrollUp; }
+//         bind "s" { SwitchToMode "Search"; }
+//         bind "G" { ScrollToBottom; }
+//         // bind "g" { ScrollToTop; }
+//     }
+//
+//     search {
+//         bind "Ctrl c" { SwitchToMode "Normal"; }
+//         // bind "j" "Down" { SearchDown; }
+//         // bind "k" "Up" { SearchUp; }
+//         // bind "PageDown" "Right" "l" { SearchDown; }
+//         // bind "PageUp" "Left" "h" { SearchUp; }
+//         // bind "d" { SearchDown; }
+//         // bind "u" { SearchUp; }
+//         // bind "n" { SearchDown; }
+//         // bind "N" { SearchUp; }
+//         bind "c" { SearchToggleOption "CaseSensitivity"; }
+//         bind "w" { SearchToggleOption "Wrap"; }
+//         bind "o" { SearchToggleOption "WholeWord"; }
+//     }
+// }
+//
+// // UI configuration
+// ui {
+//     pane_frames {
+//         rounded_corners true
+//         hide_session_name false
+//     }
+// }
+//
+// // Plugins
+// plugins {
+//     tab-bar { path "tab-bar"; }
+//     status-bar { path "status-bar"; }
+// }
+//
+// // Default layout
+// default_layout "compact"
+//
+// // Session configuration
+// session_serialization true
+// pane_viewports true
+//
+// // Copy command (adjust based on your system)
+// copy_command "wl-copy"
+//
+// // Layouts
+// layouts {
+//     default {
+//         tab name="main" {
+//             pane
+//         }
+//     }
+//
+//     dev {
+//         tab name="editor" {
+//             pane {
+//                 command "nvim"
+//                 args "."
+//             }
+//         }
+//         tab name="terminal" {
+//             pane
+//         }
+//         tab name="server" {
+//             pane
+//         }
+//     }
+//
+//     work {
+//         tab name="code" split_direction="vertical" {
+//             pane {
+//                 command "nvim"
+//                 args "."
+//             }
+//             pane split_direction="horizontal" {
+//                 pane
+//                 pane
+//             }
+//         }
+//         tab name="docs" {
+//             pane
+//         }
+//         tab name="monitor" {
+//             pane {
+//                 command "htop"
+//             }
+//         }
+//     }
+// }
+
+// Auto-attach to existing session if available
+auto_layout true
+
+// Mouse support
+mouse_mode true
+
+// Simplified UI
+// simplified_ui false
+
+// Default mode
+default_mode "normal"
+
+// Scroll buffer size
+scroll_buffer_size 10000
+
+// Copy on select
+copy_on_select true 

@@ -1,14 +1,2 @@
-.config/.wrangler
-.config/Docker Desktop
-.config/JetBrains
-.config/jgit
-.config/dconf
-.config/github-copilot
-.config/google-chrome
-.config/HTTPie
-.config/lazygit
-.config/pulse
-.config/spotify
-#.config/systemd
-.config/tailscale
-.config/zsh/.zcompdump
+fish/.config/secrets.fish
+

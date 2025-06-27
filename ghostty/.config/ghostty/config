@@ -11,7 +11,8 @@ window-padding-y = 8
 
 # Font settings
 font-family = "monospace" # use fontconfig default
-#font-size = 12
+font-size = 11
+adjust-cell-height = 25%
 
 # Shell settings
 shell-integration = fish
@@ -37,3 +38,4 @@ desktop-notifications = true
 
 # Mouse
 mouse-hide-while-typing = true
+keybind = shift+enter=text:\n

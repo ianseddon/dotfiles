@@ -36,7 +36,8 @@ fish_vi_key_bindings
 
 # init
 starship init fish | source
-zoxide init fish | source
+# replaced with icezyclon/zoxide.fish plugin
+#zoxide init fish | source 
 
 # Zellij integration
 if test -n "$ZELLIJ"

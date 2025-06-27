@@ -99,4 +99,8 @@ if status is-interactive; and not set -q ZELLIJ; and command -v zellij >/dev/nul
     exec zellij
 end
 
+# bun
+set --export BUN_INSTALL "$HOME/.bun"
+set --export PATH $BUN_INSTALL/bin $PATH
+
 alias claude="/home/ian/.claude/local/claude"

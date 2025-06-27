@@ -98,3 +98,5 @@ end
 if status is-interactive; and not set -q ZELLIJ; and command -v zellij >/dev/null
     exec zellij
 end
+
+alias claude="/home/ian/.claude/local/claude"

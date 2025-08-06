@@ -2,7 +2,7 @@
 mouse-scroll-multiplier = 0.5
 
 # Window appearance
-window-decoration = true
+window-decoration = server
 window-padding-x = 8
 window-padding-y = 8
 

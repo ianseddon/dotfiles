@@ -25,6 +25,7 @@ fish_add_path -g "$BUN_INSTALL/bin" # bun
 fish_add_path -g "$HOME/.config/composer/vendor/bin" # composer/php
 fish_add_path -g "$HOME/go/bin" # go
 fish_add_path -g "$PNPM_HOME" # pnpm
+fish_add_path -g "$HOME/.lando/bin" # lando
 
 # Source local environment file if it exists
 # if test -f ~/.local/bin/env

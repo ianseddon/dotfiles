@@ -18,26 +18,38 @@ alias grep='grep --color=auto'
 
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
-alias vim=nvim
-alias vi=nvim
 
-# stuff... but better
-if command -v eza >/dev/null
-    alias ls=eza
-end
+# nvim
+abbr vim nvim
+abbr vi nvim
+abbr v nvim
 
-if command -v bat >/dev/null
+# bat
+if type -q bat
     alias cat=bat
+    alias less=bat
+    alias head='bat --line-range :10'
+    alias tail='bat --line-range -10:'
 end
 
+# eza
+if type -q eza
+    alias ls=eza
+    alias ll "eza -l -a --icons"
+    abbr llt "eza -l -a --icons --tree"
+end
+
+# fd
 if command -v fd >/dev/null
     alias find=fd
 end
 
+# ripgrep
 if command -v rg >/dev/null
     alias grep=rg
 end
 
+# zoxide
 if command -v z >/dev/null
     alias cd=z
 end

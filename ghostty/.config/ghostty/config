@@ -3,8 +3,9 @@ mouse-scroll-multiplier = 0.5
 
 # Window appearance
 window-decoration = server
-window-padding-x = 8
-window-padding-y = 8
+window-padding-x = 14
+window-padding-y = 14
+resize-overlay = never
 
 # Theme and colors
 #theme = everforest-dark
@@ -38,4 +39,7 @@ desktop-notifications = true
 
 # Mouse
 mouse-hide-while-typing = true
+
+# Keybinds
 keybind = shift+enter=text:\n
+keybind = f11=toggle_fullscreen

@@ -27,9 +27,9 @@ abbr v nvim
 # bat
 if type -q bat
     alias cat=bat
-    alias less=bat
-    alias head='bat --line-range :10'
-    alias tail='bat --line-range -10:'
+    #alias less=bat
+    #alias head='bat --line-range :10'
+    #alias tail='bat --line-range -10:'
 end
 
 # eza

@@ -1,0 +1,152 @@
+/*
+ * Everforest Dark - Minimal Waybar Theme
+ *
+ * Palette:
+ *   bg:     #2D353B    fg:      #D3C6AA
+ *   bg_dim: #1E2326    bg1:     #2E383C
+ *   bg3:    #414B50    grey0:   #7A8478
+ *   green:  #A7C080    aqua:    #83C092
+ *   blue:   #7FBBB3    yellow:  #DBBC7F
+ *   orange: #E69875    red:     #E67E80
+ *   purple: #D699B6
+ */
+
+/* ── Base ─────────────────────────────────────────── */
+
+* {
+    font-family: monospace;
+    font-size: 14px;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+}
+
+window#waybar {
+    background-color: rgba(45, 53, 59, 0.85);
+    color: #D3C6AA;
+    padding: 6px 4px;
+    border-bottom: 1px solid rgba(65, 75, 80, 0.6);
+}
+
+tooltip {
+    background-color: #1E2326;
+    border: 1px solid #414B50;
+    border-radius: 4px;
+    color: #D3C6AA;
+}
+
+tooltip label {
+    color: #D3C6AA;
+}
+
+/* ── Workspaces ───────────────────────────────────── */
+
+#workspaces {
+    margin: 0;
+    padding: 0;
+}
+
+#workspaces button {
+    padding: 4px 6px;
+    color: #7A8478;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    transition: all 0.15s ease;
+}
+
+#workspaces button:hover {
+    color: #D3C6AA;
+    background: #2E383C;
+    box-shadow: none;
+}
+
+#workspaces button.active {
+    color: #A7C080;
+}
+
+#workspaces button.urgent {
+    color: #E67E80;
+}
+
+#workspaces button.empty {
+    color: #414B50;
+}
+
+/* ── Window Title ─────────────────────────────────── */
+
+#window {
+    color: #7A8478;
+    font-style: italic;
+}
+
+/* ── Right-side Modules (shared) ──────────────────── */
+
+#custom-media,
+#temperature,
+#cpu,
+#memory,
+#pulseaudio,
+#clock,
+#tray {
+    padding: 4px 8px;
+    background: transparent;
+}
+
+/* ── Media ────────────────────────────────────────── */
+
+#custom-media {
+    color: #A7C080;
+}
+
+/* ── Temperature ──────────────────────────────────── */
+
+#temperature {
+    color: #E69875;
+}
+
+#temperature.critical {
+    color: #E67E80;
+}
+
+/* ── CPU ──────────────────────────────────────────── */
+
+#cpu {
+    color: #A7C080;
+}
+
+/* ── Memory ───────────────────────────────────────── */
+
+#memory {
+    color: #D699B6;
+}
+
+/* ── Audio ────────────────────────────────────────── */
+
+#pulseaudio {
+    color: #DBBC7F;
+}
+
+#pulseaudio.muted {
+    color: #7A8478;
+}
+
+/* ── Clock ────────────────────────────────────────── */
+
+#clock {
+    color: #7FBBB3;
+}
+
+/* ── Tray ─────────────────────────────────────────── */
+
+#tray {
+    padding: 4px 6px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+}

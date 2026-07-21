@@ -8,11 +8,11 @@ window-padding-y = 14
 resize-overlay = never
 
 # Theme and colors
-#theme = everforest-dark
+theme = Kanagawa Wave
 
 # Font settings
 font-family = "monospace" # use fontconfig default
-font-size = 11
+font-size = 12
 adjust-cell-height = 25%
 
 # Shell settings

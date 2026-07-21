@@ -1,0 +1,121 @@
+// -*- mode: jsonc -*-
+[
+    // ── Primary monitor (full bar) ──────────────────────
+    {
+        "output": "DP-1",
+        "layer": "top",
+        "position": "top",
+        "spacing": 0,
+
+        "modules-left": [
+            "hyprland/workspaces"
+        ],
+        "modules-center": [
+            "hyprland/window"
+        ],
+        "modules-right": [
+            "custom/media",
+            "temperature",
+            "cpu",
+            "memory",
+            "pulseaudio",
+            "clock",
+            "tray"
+        ],
+
+        "hyprland/workspaces": {
+            "format": "{name}",
+            "show-special": false,
+            "all-outputs": false
+        },
+
+        "hyprland/window": {
+            "max-length": 60,
+            "separate-outputs": true
+        },
+
+        "custom/media": {
+            "format": "{}",
+            "return-type": "json",
+            "max-length": 40,
+            "exec": "playerctl metadata --format '{\"text\": \"  {{artist}} - {{title}}\", \"tooltip\": \"{{artist}} - {{album}} - {{title}}\", \"class\": \"playing\"}' --follow 2>/dev/null",
+            "on-click": "playerctl play-pause",
+            "on-scroll-up": "playerctl next",
+            "on-scroll-down": "playerctl previous"
+        },
+
+        "temperature": {
+            "critical-threshold": 80,
+            "format": "󱃃 {temperatureC}°",
+            "format-critical": "󱃃 {temperatureC}°",
+            "tooltip-format": "{temperatureC}°C"
+        },
+
+        "cpu": {
+            "format": "󰍛 {usage}%",
+            "interval": 5,
+            "tooltip-format": "{usage}% used ({load} load avg)"
+        },
+
+        "memory": {
+            "format": "󰘚 {percentage}%",
+            "interval": 5,
+            "tooltip-format": "{used:0.1f} GiB / {total:0.1f} GiB"
+        },
+
+        "pulseaudio": {
+            "format": "{icon} {volume}%",
+            "format-muted": "󰝟 muted",
+            "format-icons": {
+                "headphone": "󰋋",
+                "default": ["󰕿", "󰖀", "󰕾"]
+            },
+            "on-click": "pavucontrol",
+            "tooltip-format": "{desc}\n{volume}%"
+        },
+
+        "clock": {
+            "format": "󰥔 {:%H:%M}",
+            "format-alt": "󰃭 {:%a %b %d}",
+            "tooltip-format": "<tt><small>{calendar}</small></tt>"
+        },
+
+        "tray": {
+            "icon-size": 16,
+            "spacing": 8
+        }
+    },
+
+    // ── Secondary monitor(s) (minimal bar) ─────────────
+    {
+        "output": "!DP-1",
+        "layer": "top",
+        "position": "top",
+        "spacing": 0,
+
+        "modules-left": [
+            "hyprland/workspaces"
+        ],
+        "modules-center": [
+            "hyprland/window"
+        ],
+        "modules-right": [
+            "clock"
+        ],
+
+        "hyprland/workspaces": {
+            "format": "{name}",
+            "show-special": false,
+            "all-outputs": false
+        },
+
+        "hyprland/window": {
+            "max-length": 60,
+            "separate-outputs": true
+        },
+
+        "clock": {
+            "format": "󰥔 {:%H:%M}"
+        }
+    }
+]

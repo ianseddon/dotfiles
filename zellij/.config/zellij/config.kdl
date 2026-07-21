@@ -1,4 +1,4 @@
-theme "everforest-dark"
+theme "kanagawa"
 default_mode "normal"
 default_shell "fish"
 // default_layout "work"

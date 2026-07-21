@@ -1,6 +1,39 @@
--- Options are automatically loaded before lazy.nvim startup
--- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
--- Add any additional options here
+vim.g.mapleader = " "
+vim.g.maplocalleader = "\\"
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_ruby_provider = 0
 
--- Don't format with prettier unless a config is present.
-vim.g.lazyvim_prettier_needs_config = true
+local o = vim.o
+o.number = true
+o.relativenumber = true
+o.signcolumn = "yes"
+o.cursorline = true
+o.scrolloff = 8
+o.sidescrolloff = 8
+o.wrap = false
+o.tabstop = 2
+o.shiftwidth = 2
+o.softtabstop = 2
+o.expandtab = true
+o.smartindent = true
+o.ignorecase = true
+o.smartcase = true
+o.hlsearch = true
+o.splitbelow = true
+o.splitright = true
+o.undofile = true
+o.completeopt = "menuone,noselect,popup"
+o.foldmethod = "expr"
+o.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+o.foldlevel = 99
+o.foldlevelstart = 99
+o.termguicolors = true
+o.updatetime = 250
+o.timeoutlen = 300
+o.mouse = "a"
+o.clipboard = "unnamedplus"
+o.showmode = false
+o.autoread = true
+o.winborder = "rounded"

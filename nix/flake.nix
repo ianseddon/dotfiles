@@ -18,6 +18,7 @@
         ripgrep
         fd
         jq
+        awscli2
 
         fish
         herdr.packages.${system}.default

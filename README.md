@@ -24,7 +24,7 @@ For the M75q's complete disk-to-development setup, use [the targeted Arch instal
 The `nix/` flake provides the same pinned tools as either a persistent user profile or a temporary development shell on `x86_64-linux`. It is not an Arch installer or a NixOS configuration.
 
 - **Arch owns:** the kernel, hardware, networking, Nix daemon, OpenSSH, and Tailscale.
-- **Nix owns:** Git, GitHub CLI, Stow, ripgrep, fd, jq, Fish, Zellij, Neovim, Node 24 with npm/Corepack, Bun, Python 3.12, uv, GCC, Make, pkg-config, rootless Docker Engine with Compose/Buildx, and omp.
+- **Nix owns:** Git, GitHub CLI, Stow, ripgrep, fd, jq, AWS CLI v2, Fish, Zellij, Neovim, Node 24 with npm/Corepack, Bun, Python 3.12, uv, GCC, Make, pkg-config, rootless Docker Engine with Compose/Buildx, and omp.
 - **Stow owns:** dotfile symlinks. No Home Manager or changes to the login shell.
 
 On the headless host, keep Arch's `/bin/bash` as the login shell. Launch Nix-provided Fish after login; do not follow the desktop installer's `chsh` steps.
@@ -65,6 +65,13 @@ Use a checkout containing this configuration. Keep it at the same path: both Sto
 Only the `nix` Stow package is installed here. It enables flakes, adds the user profile to Fish's PATH without overriding an active Nix development shell, and installs the rootless Docker user unit plus Fish's `DOCKER_HOST`. It does not install the desktop Fish configuration, source `secrets.fish`, or start desktop services. Do not run the desktop `install.sh` or `stow */` on the headless host.
 
 Tailscale SSH does not require enabling `sshd` or exposing port 22 publicly. Complete GitHub authentication with `gh auth login`, and configure the desired provider through omp's `/login` separately. No credentials, SSH keys, or agent state belong in this flake. In particular, do not copy Bridge Commander state or start a second writer as part of this bootstrap.
+
+The flake installs the AWS CLI, not its configuration: this repository is public, and `~/.aws/config` names account IDs and SSO start URLs. Copy `~/.aws/config` from the workstation (mode 0600). The host has no browser, so sign in with a flow that prints a URL and code for another device:
+
+```bash
+aws sso login --use-device-code --sso-session <name>   # IAM Identity Center profiles
+aws login --remote                                     # IAM/root sign-in without SSO
+```
 
 ### Use the Environment
 

@@ -1,0 +1,14 @@
+[Unit]
+Description=Herdr persistent terminal server
+
+[Service]
+Type=simple
+WorkingDirectory=%h
+Environment=PATH=%h/.nix-profile/bin:%h/.local/bin:/usr/local/bin:/usr/bin
+Environment=SHELL=/usr/bin/fish
+ExecStart=%h/.nix-profile/bin/herdr server
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,3 @@
+# Package definitions stay in the checkout, not the home directory.
+flake\.nix
+flake\.lock

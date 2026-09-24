@@ -24,7 +24,7 @@ For the M75q's complete disk-to-development setup, use [the targeted Arch instal
 The `nix/` flake provides the same pinned tools as either a persistent user profile or a temporary development shell on `x86_64-linux`. It is not an Arch installer or a NixOS configuration.
 
 - **Arch owns:** the kernel, hardware, networking, Nix daemon, OpenSSH, and Tailscale.
-- **Nix owns:** Git, GitHub CLI, Stow, ripgrep, fd, jq, Fish, Zellij, Neovim, Node 24 with npm/Corepack, Bun, Python 3.12, uv, GCC, Make, pkg-config, and omp.
+- **Nix owns:** Git, GitHub CLI, Stow, ripgrep, fd, jq, Fish, Zellij, Neovim, Node 24 with npm/Corepack, Bun, Python 3.12, uv, GCC, Make, pkg-config, rootless Docker Engine with Compose/Buildx, and omp.
 - **Stow owns:** dotfile symlinks. No Home Manager or changes to the login shell.
 
 On the headless host, keep Arch's `/bin/bash` as the login shell. Launch Nix-provided Fish after login; do not follow the desktop installer's `chsh` steps.
@@ -52,13 +52,17 @@ test -f nix/flake.lock
 nix --extra-experimental-features 'nix-command flakes' profile add path:./nix#dev
 export PATH="$HOME/.nix-profile/bin:$PATH"
 stow --target="$HOME" nix
+# Rootless Docker runs as a user service; lingering starts it without a login.
+sudo loginctl enable-linger "$USER"
+systemctl --user daemon-reload
+systemctl --user enable --now docker.service
 
 fish
 ```
 
 Use a checkout containing this configuration. Keep it at the same path: both Stow symlinks and profile upgrades refer to it. Stow refuses conflicting existing files; reconcile those explicitly rather than forcing an overwrite.
 
-Only the `nix` Stow package is installed here. It enables flakes and adds the user profile to Fish's PATH without overriding an active Nix development shell. It does not install the desktop Fish configuration, source `secrets.fish`, or start desktop services. Do not run the desktop `install.sh` or `stow */` on the headless host.
+Only the `nix` Stow package is installed here. It enables flakes, adds the user profile to Fish's PATH without overriding an active Nix development shell, and installs the rootless Docker user unit plus Fish's `DOCKER_HOST`. It does not install the desktop Fish configuration, source `secrets.fish`, or start desktop services. Do not run the desktop `install.sh` or `stow */` on the headless host.
 
 Tailscale SSH does not require enabling `sshd` or exposing port 22 publicly. Complete GitHub authentication with `gh auth login`, and configure the desired provider through omp's `/login` separately. No credentials, SSH keys, or agent state belong in this flake. In particular, do not copy Bridge Commander state or start a second writer as part of this bootstrap.
 
@@ -84,6 +88,20 @@ nix --extra-experimental-features 'nix-command flakes' develop path:./nix --comm
 
 Use `path:./nix` deliberately: it keeps the flake source limited to this directory instead of copying the entire dotfiles repository into the world-readable Nix store. Keep secrets out of `nix/` too.
 
+### Docker
+
+Docker runs rootless: `docker.service` is a `systemd --user` unit running the profile's `dockerd-rootless`, and user lingering starts it at boot. It needs no pacman packages, sudo, or `docker` group, which would be root-equivalent. Arch only supplies `newuidmap`/`newgidmap` and the `ian:100000:65536` range in `/etc/subuid` and `/etc/subgid`. A rootful Arch `docker` package was rejected: Arch would own the engine instead of this flake, and every membership of the `docker` group grants root.
+
+`nix/.config/fish/conf.d/docker.fish` points the CLI at `/run/user/$UID/docker.sock`, because Tailscale SSH sessions do not set `XDG_RUNTIME_DIR`. `docker compose` and `docker buildx` are wired into the Nix CLI wrapper; `docker-compose` remains for older scripts.
+
+```bash
+systemctl --user status docker.service
+docker info --format '{{json .SecurityOptions}}'   # includes "name=rootless"
+docker compose up -d
+```
+
+Rootless limits: published ports must be 1024 or higher, `--network host` means RootlessKit's namespace rather than the machine's, and files that non-root container users write to bind mounts are owned by subordinate UIDs on the host. Reclaim those with `docker run --rm -v "$PWD:/w" alpine chown -R 0:0 /w` (container root maps to `ian`). Images and volumes live under `~/.local/share/docker`, not `/var/lib/docker`.
+
 ### Update and Roll Back
 
 From the same dotfiles checkout, after the bootstrap:
@@ -105,7 +123,7 @@ nix profile rollback
 
 Rollback changes the user profile, not Stow-managed files, project dependencies, or data. Keep the previous lockfile in Git for reproducibility; do not garbage-collect old generations before deciding whether to roll back.
 
-This baseline does not provision containers, databases, browsers, editor plugins, automation services, or secrets. Add project-specific dependencies in the relevant project's environment rather than expanding the shared tool list speculatively.
+This baseline does not provision databases, browsers, editor plugins, automation services, or secrets. Add project-specific dependencies in the relevant project's environment rather than expanding the shared tool list speculatively; run project services through Docker Compose.
 
 ## New Setup (Fish + Zellij + Ghostty)
 

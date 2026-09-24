@@ -35,6 +35,12 @@
         gnumake
         pkg-config
 
+        # Rootless engine (dockerd-rootless, run by the stowed user unit) and a
+        # CLI wrapped with the compose/buildx plugins; docker-compose keeps the
+        # legacy hyphenated command for scripts that still call it.
+        docker
+        docker-compose
+
         omp.packages.${system}.default
       ];
     in

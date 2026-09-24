@@ -1,0 +1,25 @@
+[Unit]
+Description=Docker Application Container Engine (Rootless)
+Documentation=https://docs.docker.com/go/rootless/
+StartLimitIntervalSec=60s
+StartLimitBurst=3
+
+[Service]
+# The wrapper supplies rootlesskit, slirp4netns and iptables; newuidmap and
+# newgidmap come from Arch's shadow package in /usr/bin.
+Type=notify
+NotifyAccess=all
+ExecStart=%h/.nix-profile/bin/dockerd-rootless
+ExecReload=/usr/bin/kill -s HUP $MAINPID
+TimeoutSec=0
+Restart=always
+RestartSec=2
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+Delegate=yes
+KillMode=mixed
+
+[Install]
+WantedBy=default.target

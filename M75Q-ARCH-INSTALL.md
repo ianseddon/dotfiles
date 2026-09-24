@@ -21,7 +21,7 @@ For a named configuration-file block, create or edit that file with `nano` and c
 | Remote access | Tailscale SSH; no public SSH port or enabled OpenSSH server |
 | Login shell | Arch's `/bin/bash`; Nix Fish is optional, launched after login |
 | Locale / time | `en_US.UTF-8`, US console keymap, `America/Montreal` |
-| Development | The adjacent `nix/` flake; no desktop, Home Manager, or copied agent state |
+| Development | The adjacent `nix/` flake, including rootless Docker as a user service; no desktop, Home Manager, or copied agent state |
 
 The timezone/locale match the current workstation. Change them if desired. `/home`, `/nix`, and the ordinary `/boot` directory live inside the encrypted root filesystem. Only signed boot artifacts are placed on the unencrypted ESP. A 2 GiB ESP leaves room for normal and fallback UKIs without dividing the rest of the SSD into fixed-size partitions.
 
@@ -554,6 +554,9 @@ test -f nix/flake.lock
 nix --extra-experimental-features 'nix-command flakes' profile add path:./nix#dev
 export PATH="$HOME/.nix-profile/bin:$PATH"
 stow --target="$HOME" nix
+sudo loginctl enable-linger "$USER"
+systemctl --user daemon-reload
+systemctl --user enable --now docker.service
 
 readlink "$HOME/.nix-profile"
 nix profile list
@@ -563,6 +566,8 @@ bun --version
 python --version
 uv --version
 omp --version
+docker compose version
+DOCKER_HOST="unix:///run/user/$(id -u)/docker.sock" docker run --rm hello-world
 fish
 ```
 

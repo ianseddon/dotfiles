@@ -2,7 +2,7 @@
 [
     // ── Primary monitor (full bar) ──────────────────────
     {
-        "output": "DP-1",
+        "output": "LG Electronics LG HDR 4K 0x00052A41",
         "layer": "top",
         "position": "top",
         "spacing": 0,
@@ -95,7 +95,7 @@
 
     // ── Secondary monitor(s) (minimal bar) ─────────────
     {
-        "output": "!DP-1",
+        "output": "!LG Electronics LG HDR 4K 0x00052A41",
         "layer": "top",
         "position": "top",
         "spacing": 0,

@@ -16,7 +16,7 @@ For a named configuration-file block, create or edit that file with `nano` and c
 | Storage | GPT; 2 GiB FAT32 EFI system partition at `/efi`; remainder LUKS2 with ext4 at `/` |
 | Encryption | TPM2 automatic unlock, no boot PIN, retained recovery key/passphrase |
 | Boot trust | Secure Boot plus signed PCR11 policies; no fixed kernel-version PCR11 binding |
-| Memory | zram up to half of RAM, capped at 8 GiB; no hibernation |
+| Memory | zram the size of RAM, then a 16 GiB NVMe swapfile; earlyoom kills dev processes before the kernel OOM killer; no hibernation |
 | Network | Wired Ethernet, DHCP, systemd-networkd and systemd-resolved |
 | Remote access | Tailscale SSH; no public SSH port or enabled OpenSSH server |
 | Login shell | Arch's `/bin/bash`; Nix Fish is optional, launched after login |
@@ -124,7 +124,7 @@ pacstrap -K /mnt \
   mkinitcpio cryptsetup e2fsprogs dosfstools \
   sudo nano man-db man-pages \
   systemd-ukify sbctl tpm2-tss openssl jq efitools \
-  zram-generator openssh git tailscale nix
+  zram-generator earlyoom openssh git tailscale nix
 
 genfstab -U /mnt > /mnt/etc/fstab
 cat /mnt/etc/fstab
@@ -191,16 +191,43 @@ Create `/etc/systemd/zram-generator.conf`:
 
 ```ini
 [zram0]
-zram-size = min(ram / 2, 8192)
+zram-size = ram
 compression-algorithm = zstd
+swap-priority = 100
 ```
 
-This is compressed RAM swap, not an extra 8 GiB of physical memory. No zram service needs enabling; the generator handles it. We disable zswap in the signed kernel command line below to avoid double compression.
+This is compressed RAM swap, not extra physical memory. TypeScript and Next.js heaps compress about 2.5:1 with zstd, so a RAM-sized device holds roughly its own size in swapped pages while occupying well under half of RAM. No zram service needs enabling; the generator handles it. We disable zswap in the signed kernel command line below to avoid double compression.
+
+Create `/etc/sysctl.d/99-zram.conf`:
+
+```ini
+vm.swappiness = 180
+vm.page-cluster = 0
+```
+
+Swapping to zram is cheaper than dropping file cache, and zram has no readahead benefit.
+
+Add a lower-priority NVMe swapfile so a full zram device degrades into slowness instead of OOM kills:
+
+```bash
+mkswap -U clear --size 16G --file /swapfile
+echo '/swapfile none swap defaults,pri=10 0 0' >> /etc/fstab
+```
+
+It activates at the first boot. The root filesystem is ext4, so a plain swapfile works; the file lives inside the encrypted root.
+
+In `/etc/default/earlyoom`, replace the `EARLYOOM_ARGS=` line with:
+
+```bash
+EARLYOOM_ARGS="-r 0 -m 5 -s 10 --prefer ^(tsc|next-server.*|node)$ --avoid ^(orca-ide|omp|sshd|tailscaled|dockerd|systemd.*)$"
+```
+
+earlyoom acts once available memory falls below 5% and free swap below 10%, killing a type-checker or dev server before the kernel's OOM killer picks an arbitrary victim such as the Orca runtime. The regexes are deliberately unquoted and space-free: `earlyoom.service` passes `$EARLYOOM_ARGS` through systemd word splitting without quote removal, so quotes would become literal characters and match nothing.
 
 ```bash
 systemctl enable systemd-networkd.service systemd-resolved.service
 systemctl enable systemd-timesyncd.service tailscaled.service nix-daemon.service
-systemctl enable fstrim.timer
+systemctl enable fstrim.timer earlyoom.service
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
 ```
 
@@ -588,7 +615,7 @@ Do these while physical recovery remains easy:
 - [ ] A normal reboot and a cold power-on reach the login prompt without a disk password.
 - [ ] Tailscale SSH works from the workstation after each boot.
 - [ ] A new remote login finds `node`, `corepack`, `bun`, `uv`, and `omp`.
-- [ ] `systemctl --failed` has no unexplained failures; networking, DNS, NTP, and zram work.
+- [ ] `systemctl --failed` has no unexplained failures; networking, DNS, NTP, zram, the swapfile, and earlyoom work. `swapon --show` lists `/dev/zram0` at priority 100 and `/swapfile` at priority 10.
 - [ ] The fallback UKI can boot and auto-unlock; afterward select the normal entry again.
 - [ ] `sudo mkinitcpio -P` rebuilds and signs both images without regenerating the PCR key, and a subsequent reboot still auto-unlocks.
 - [ ] Recovery key, signing keys, firmware-key backup, and LUKS-header backup exist outside the M75q in protected storage.

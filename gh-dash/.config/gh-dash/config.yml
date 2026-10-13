@@ -1,0 +1,38 @@
+# gh-dash merges this file over its built-in defaults; only overrides live here.
+# Listing prSections replaces the default PR tabs, so all of them are spelled out.
+prSections:
+  - title: My Pull Requests
+    filters: is:open author:@me
+  - title: Needs My Review
+    filters: is:open review-requested:@me
+  - title: Assigned
+    filters: is:open assignee:@me
+  - title: Involved
+    filters: is:open involves:@me -author:@me
+
+# Kanagawa Wave, mapped from kanagawa.nvim's palette
+# (https://github.com/rebelot/kanagawa.nvim, MIT) to match Ghostty, nvim, and tuicr.
+theme:
+  colors:
+    text:
+      primary: "#DCD7BA"     # fujiWhite, Normal fg
+      secondary: "#C8C093"   # oldWhite
+      inverted: "#16161D"    # sumiInk0, text on colored pills
+      faint: "#727169"       # fujiGray, Comment
+      warning: "#FF9E3B"     # roninYellow, DiagnosticWarn
+      success: "#98BB6C"     # springGreen
+      error: "#E82424"       # samuraiRed, DiagnosticError
+      actor: "#7E9CD8"       # crystalBlue, @user in notifications
+    background:
+      selected: "#223249"    # waveBlue1, Visual; selected row, active tab, footer
+    border:
+      primary: "#54546D"     # sumiInk6, tab underline and sidebar
+      secondary: "#727169"   # fujiGray, tab separators
+      faint: "#2A2A37"       # sumiInk4, row separators and view switcher
+    icon:
+      newcontributor: "#98BB6C" # springGreen
+      contributor: "#7E9CD8"    # crystalBlue
+      collaborator: "#E6C384"   # carpYellow
+      member: "#E6C384"
+      owner: "#E6C384"
+      unknownrole: "#727169"    # fujiGray

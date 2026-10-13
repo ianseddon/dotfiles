@@ -1,8 +1,8 @@
 // -*- mode: jsonc -*-
 [
-    // ── Primary monitor (full bar) ──────────────────────
+    // ── All but the vertical monitor (full bar) ────────
     {
-        "output": "LG Electronics LG HDR 4K 0x00052A41",
+        "output": "!Acer Technologies V277U TDCAA002852A",
         "layer": "top",
         "position": "top",
         "spacing": 0,
@@ -93,9 +93,9 @@
         }
     },
 
-    // ── Secondary monitor(s) (minimal bar) ─────────────
+    // ── Vertical monitor (minimal bar) ──────────────────
     {
-        "output": "!LG Electronics LG HDR 4K 0x00052A41",
+        "output": "Acer Technologies V277U TDCAA002852A",
         "layer": "top",
         "position": "top",
         "spacing": 0,

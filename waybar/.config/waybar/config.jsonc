@@ -20,7 +20,8 @@
             "memory",
             "pulseaudio",
             "clock",
-            "tray"
+            "tray",
+            "custom/shutdown"
         ],
 
         "hyprland/workspaces": {
@@ -83,6 +84,12 @@
         "tray": {
             "icon-size": 16,
             "spacing": 8
+        },
+
+        "custom/shutdown": {
+            "format": "󰐥",
+            "tooltip-format": "Exit Hyprland gracefully",
+            "on-click": "hyprshutdown"
         }
     },
 

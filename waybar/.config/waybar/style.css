@@ -88,7 +88,8 @@ tooltip label {
 #memory,
 #pulseaudio,
 #clock,
-#tray {
+#tray,
+#custom-shutdown {
     padding: 4px 8px;
     background: transparent;
 }
@@ -149,4 +150,14 @@ tooltip label {
 
 #tray > .needs-attention {
     -gtk-icon-effect: highlight;
+}
+
+/* ── Shutdown ─────────────────────────────────────── */
+
+#custom-shutdown {
+    color: #E67E80;
+}
+
+#custom-shutdown:hover {
+    background: #2E383C;
 }

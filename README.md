@@ -332,6 +332,29 @@ If zellij doesn't auto-start, check:
 2. Fish configuration is properly sourced
 3. No conflicts with other terminal multiplexers
 
+### Hyprlock Rejects the Correct Password
+
+`pam_faillock` keeps a single per-user tally (`/run/faillock/$USER`, `deny=3`,
+`unlock_time=600`). Failed prompts from *any* service share it, including
+`sudo` invoked without a TTY - an agent shell or a `paru`/`pacman` retry loop
+logs `pam_unix(sudo:auth): conversation failed` every few minutes and drains
+the tally. Hyprlock then refuses the correct password and reports minutes left
+to unlock.
+
+```bash
+# Who burned the attempts, and when
+faillock --user $USER
+journalctl -b -g 'authentication failure|conversation failed|faillock' -o short-iso
+
+# Clear it (no root needed; the tally file is owned by the user)
+faillock --user $USER --reset
+```
+
+`pam/hyprlock` removes faillock from the locker's stack so unrelated failures
+can no longer lock a live session; deploy it with
+`sudo install -m 0644 pam/hyprlock /etc/pam.d/hyprlock`. Package managers still
+need a real TTY: run them in a terminal, not from a detached/non-TTY shell.
+
 ## Contributing
 
 Feel free to submit issues and enhancement requests!

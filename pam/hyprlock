@@ -1,0 +1,30 @@
+#%PAM-1.0
+#
+# Screen locker auth for hyprlock. Deploy with:
+#   sudo install -m 0644 pam/hyprlock /etc/pam.d/hyprlock
+#
+# Arch ships "auth include login", which drags hyprlock through the full login
+# stack: pam_shells, pam_nologin and - the problem - pam_faillock. faillock
+# keeps one tally per user (/run/faillock/$USER, deny=3, unlock_time=600), so
+# any failed sudo/pacman/login prompt anywhere on the box burns unlock attempts
+# and a locked screen then refuses the correct password for 10 minutes.
+# Headless `sudo` (agent shells, paru retry loops) fails PAM conversation and
+# counts as an auth failure, which is how a running session gets locked out.
+#
+# The locker is behind a session that is already open, so:
+#   - no faillock: a mistyped or stray keystroke never locks the session, and
+#     unrelated services cannot lock it either. Rate limiting at the lock
+#     screen buys little here (root disk is LUKS; pam_unix still delays each
+#     failure ~2s). sudo and login keep their faillock protection.
+#   - no pam_nologin/pam_shells: /etc/nologin or a shell missing from
+#     /etc/shells must never be able to block unlocking a live session.
+#
+# hyprlock only calls pam_start/pam_authenticate/pam_end, so the non-auth
+# groups are unused today; they are included so a future hyprlock that calls
+# pam_acct_mgmt does not fall through to /etc/pam.d/other (pam_deny).
+
+auth       required   pam_unix.so
+
+account    include    system-auth
+password   include    system-auth
+session    include    system-auth

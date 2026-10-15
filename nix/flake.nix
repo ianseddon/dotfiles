@@ -1,59 +1,42 @@
 {
-  description = "Ian's headless Arch development tools";
+  description = "Ian's Nix-managed development machines";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-  inputs.herdr.url = "github:herdrdev/herdr/v0.9.1";
+  inputs.herdr.url = "github:herdrdev/herdr/v0.9.3";
   inputs.herdr.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.omp.url = "github:can1357/oh-my-pi";
+  inputs.omp.url = "github:can1357/oh-my-pi/v18.8.0";
   inputs.omp.inputs.nixpkgs.follows = "nixpkgs";
+  # nixpkgs trails worktrunk releases (0.74.0 there), and `wt config plugins omp`
+  # needs 0.78.0 or later.
+  inputs.worktrunk.url = "github:max-sixty/worktrunk/v0.80.0";
+  inputs.worktrunk.inputs.nixpkgs.follows = "nixpkgs";
 
-  outputs = { nixpkgs, herdr, omp, ... }:
+  outputs = { nixpkgs, herdr, omp, worktrunk, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
-      tools = with pkgs; [
-        git
-        gh
-        stow
-        ripgrep
-        fd
-        jq
-        awscli2
+      args = { inherit pkgs system herdr omp worktrunk; };
 
-        fish
-        herdr.packages.${system}.default
-        zellij
-        neovim
+      dev = import ./dev.nix args;
 
-        # Standalone Corepack supplies pnpm/yarn shims without a bundled copy.
-        nodejs-slim_24
-        nodejs-slim_24.npm
-        (corepack.override { nodejs-slim = nodejs-slim_24; })
-        bun
-        python312
-        uv
-        gcc
-        gnumake
-        pkg-config
-
-        # Rootless engine (dockerd-rootless, run by the stowed user unit) and a
-        # CLI wrapped with the compose/buildx plugins; docker-compose keeps the
-        # legacy hyphenated command for scripts that still call it.
-        docker
-        docker-compose
-
-        omp.packages.${system}.default
-      ];
-    in
-    {
-      packages.${system}.dev = pkgs.buildEnv {
-        name = "dev-tools";
-        paths = tools;
-        pathsToLink = [ "/bin" "/share" ];
+      # hosts/<name>.nix: the development tools plus that machine's own
+      # packages. Each becomes a profile: `nix profile add path:./nix#<name>`.
+      hosts = {
+        m75q = import ./hosts/m75q.nix (args // { inherit dev; });
       };
 
-      devShells.${system}.default = pkgs.mkShell {
-        packages = tools;
+      profile = name: paths: pkgs.buildEnv {
+        name = "${name}-tools";
+        inherit paths;
+        pathsToLink = [ "/bin" "/share" ];
+      };
+    in
+    {
+      packages.${system} = builtins.mapAttrs profile hosts;
+
+      # The development tools without any host's extras, for trying them out.
+      devShells.${system} = {
+        default = pkgs.mkShell { packages = dev; };
       };
     };
 }

@@ -1,0 +1,9 @@
+# worktrunk (`wt`) user config. Docs: https://worktrunk.dev/config/
+# Stow with ~/.config/worktrunk already a real directory (`mkdir -p` first), so only
+# this file is linked: worktrunk writes approvals.toml beside it, and approved
+# commands are per-machine state, not dotfiles.
+
+# Checkouts live in ~/dev/github.com/<owner>/<repo>; worktrees in a parallel tree,
+# so the checkouts stay clean. `owner` is the primary remote's owner path (it can
+# include subgroups); worktrunk has no host variable.
+worktree-path = "~/dev/wt/{{ owner }}/{{ repo }}/{{ branch | sanitize }}"

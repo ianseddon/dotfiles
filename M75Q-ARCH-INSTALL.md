@@ -578,9 +578,10 @@ This file-copy bootstrap carries no Git history. Once the change is published, u
 ```bash
 source /etc/profile.d/nix-daemon.sh
 test -f nix/flake.lock
-nix --extra-experimental-features 'nix-command flakes' profile add path:./nix#dev
+nix --extra-experimental-features 'nix-command flakes' profile add path:./nix#m75q
 export PATH="$HOME/.nix-profile/bin:$PATH"
 stow --target="$HOME" nix
+mkdir -p ~/.config/worktrunk && stow --target="$HOME" worktrunk
 sudo loginctl enable-linger "$USER"
 systemctl --user daemon-reload
 systemctl --user enable --now docker.service

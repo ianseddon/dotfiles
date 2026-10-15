@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# request-reviewers <owner/repo> <number>: pick reviewers for a PR with fzf and
+# request them with `gh pr edit --add-reviewer`. Bound to a gh-dash PR key
+# (gh-dash has no reviewer action of its own).
+#
+# Rows: GitHub's suggested reviewers (★) first, then everyone who can be
+# requested on the repo, then the organisation's teams (org/team). The author
+# and anyone already requested are left out; the header lists who is. tab marks
+# several, enter requests them, esc cancels. DRY_RUN=1 prints the gh command
+# instead of running it.
+set -euo pipefail
+
+repo=${1:?usage: request-reviewers <owner/repo> <number>}
+num=${2:?usage: request-reviewers <owner/repo> <number>}
+owner=${repo%%/*} name=${repo#*/}
+
+fail() {
+  printf '\nrequest-reviewers: %s\n' "$*" >&2
+  read -rsn1 -p 'press any key to go back' || true
+  exit 1
+}
+
+pr=$(gh api graphql -F owner="$owner" -F name="$name" -F num="$num" -f query='
+  query($owner: String!, $name: String!, $num: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $num) {
+        author { login }
+        suggestedReviewers { reviewer { login name } }
+        reviewRequests(first: 50) {
+          nodes { requestedReviewer { ... on User { login } ... on Team { slug } } }
+        }
+      }
+      assignableUsers(first: 100) { nodes { login name } }
+    }
+  }') || fail "cannot read $repo#$num"
+# Personal repos have no teams, so this query may fail; that's fine.
+teams=$(gh api graphql -F owner="$owner" -f query='
+  query($owner: String!) { organization(login: $owner) { teams(first: 100) { nodes { slug name } } } }' \
+  --jq '.data.organization.teams.nodes[] | [.slug, .name] | @tsv' 2>/dev/null || true)
+
+# Rows: value <TAB> display. Value is what --add-reviewer takes.
+rows=$(jq -r --arg org "$owner" --arg teams "$teams" '
+  .data.repository as $r
+  | ($r.pullRequest.reviewRequests.nodes | map(.requestedReviewer | .login // .slug)) as $req
+  | ([$r.pullRequest.author.login] + $req) as $skip
+  | ($r.pullRequest.suggestedReviewers | map(.reviewer)) as $sug
+  | (
+      ($sug[] | select(.login as $l | $skip | index($l) | not)
+        | [.login, "\u001b[33m★\u001b[0m \(.login)  \u001b[2m\(.name // "")  suggested\u001b[0m"]),
+      ($r.assignableUsers.nodes[]
+        | select(.login as $l | ($skip + ($sug | map(.login))) | index($l) | not)
+        | [.login, "  \(.login)  \u001b[2m\(.name // "")\u001b[0m"]),
+      ($teams | split("\n")[] | select(. != "") | split("\t")
+        | select(.[0] as $s | $req | index($s) | not)
+        | ["\($org)/\(.[0])", "\u001b[36m⚑\u001b[0m \($org)/\(.[0])  \u001b[2mteam\u001b[0m"])
+    )
+  | @tsv' <<<"$pr")
+requested=$(jq -r '[.data.repository.pullRequest.reviewRequests.nodes[].requestedReviewer | .login // .slug] | join(", ")' <<<"$pr")
+[ -n "$rows" ] || fail "nobody else can be requested on $repo#$num"
+
+picked=$(printf '%s\n' "$rows" | fzf --multi --ansi --delimiter=$'\t' --with-nth=2 \
+  --layout=reverse --height=100% --cycle --prompt='❯ ' --pointer='▶' --marker='+' \
+  --input-border=rounded --input-label=" Request reviewers · $repo#$num " --list-border=rounded \
+  --header="already requested: ${requested:-nobody}" --header-border=inline \
+  --footer='tab mark · enter request · esc cancel' | cut -f1 | paste -sd, -) || exit 0
+[ -n "$picked" ] || exit 0
+
+cmd=(gh pr edit "$num" -R "$repo" --add-reviewer "$picked")
+if [ -n "${DRY_RUN:-}" ]; then printf '%q ' "${cmd[@]}"; echo; exit 0; fi
+"${cmd[@]}" >/dev/null || fail "gh could not request $picked"
+printf 'requested %s on %s#%s\n' "$picked" "$repo" "$num"

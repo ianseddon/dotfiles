@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# checkout-pr <repo-path> <owner/repo> <number>: check a PR out as a worktree
+# with worktrunk and open it as a herdr workspace. Bound to gh-dash's checkout
+# keys (C, space) in place of its built-in, which runs `gh pr checkout` in the
+# main checkout and so switches that checkout's branch.
+#
+# `wt switch <PR URL>` checks out the PR's own branch (for fork PRs it fetches
+# refs/pull/N/head and points pushRemote at the fork, so `git push` works) at
+# worktrunk's worktree-path, and runs the repo's worktrunk hooks: it asks before
+# running a project's hook commands the first time and whenever they change,
+# including changes a PR makes to .config/wt.toml. Inside herdr the worktree
+# opens with `herdr worktree open`, so the worktree-layout hook lays it out;
+# outside herdr the path is printed. A repo missing at <repo-path> (gh-dash's
+# repoPaths) can be cloned there first.
+set -euo pipefail
+
+repo_path=${1:?usage: checkout-pr <repo-path> <owner/repo> <number>}
+repo=${2:?usage: checkout-pr <repo-path> <owner/repo> <number>}
+num=${3:?usage: checkout-pr <repo-path> <owner/repo> <number>}
+url="https://github.com/$repo/pull/$num"
+herdr=${HERDR_BIN_PATH:-herdr}
+
+fail() {
+  printf '\ncheckout-pr: %s\n' "$*" >&2
+  read -rsn1 -p 'press any key to go back' || true
+  exit 1
+}
+
+repo_path=${repo_path/#\~/$HOME}
+if ! git -C "$repo_path" rev-parse --git-dir >/dev/null 2>&1; then
+  [ -e "$repo_path" ] && fail "$repo_path exists but is not a git checkout"
+  read -rn1 -p "$repo is not cloned at $repo_path. Clone it there? [y/N] " answer
+  echo
+  [ "$answer" = y ] || exit 0
+  mkdir -p "$(dirname "$repo_path")"
+  gh repo clone "$repo" "$repo_path" || fail "gh could not clone $repo"
+fi
+
+printf 'checking out %s#%s with worktrunk\n\n' "$repo" "$num"
+result=$(wt -C "$repo_path" switch "$url" --no-cd --format=json) || fail "wt switch failed (see above)"
+path=$(jq -r '.path // empty' <<<"$result")
+branch=$(jq -r '.branch // empty' <<<"$result")
+[ -n "$path" ] || fail "worktrunk returned no worktree path"
+
+if [ "${HERDR_ENV:-}" != 1 ]; then
+  printf '\n%s is checked out at %s\n' "$branch" "$path"
+  read -rsn1 -p 'press any key to go back' || true
+  exit 0
+fi
+
+# Opening a worktree whose workspace is already open just focuses it.
+"$herdr" worktree open --cwd "$repo_path" --path "$path" \
+  --label "${repo#*/}#$num $branch" --focus >/dev/null ||
+  fail "herdr could not open $path"

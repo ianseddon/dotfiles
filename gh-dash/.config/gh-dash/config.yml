@@ -1,14 +1,60 @@
 # gh-dash merges this file over its built-in defaults; only overrides live here.
 # Listing prSections replaces the default PR tabs, so all of them are spelled out.
+# Every tab except My Pull Requests drops drafts with draft:false.
 prSections:
   - title: My Pull Requests
     filters: is:open author:@me
   - title: Needs My Review
-    filters: is:open review-requested:@me
+    filters: is:open draft:false review-requested:@me
   - title: Assigned
-    filters: is:open assignee:@me
+    filters: is:open draft:false assignee:@me
   - title: Involved
-    filters: is:open involves:@me -author:@me
+    filters: is:open draft:false involves:@me -author:@me
+  # workforce-monorepo PRs ready to merge: green CI plus either the robot label or an
+  # approving review. gh-dash's search API ignores OR/parentheses (dlvhdr/gh-dash#955),
+  # so the two paths are separate tabs; the approved tab drops robot-labeled PRs to dedupe.
+  - title: Mergeable (robot)
+    filters: repo:EBSCO-Nexus/workforce-monorepo is:open draft:false status:success label:robot-says-merge
+  - title: Mergeable (approved)
+    filters: repo:EBSCO-Nexus/workforce-monorepo is:open draft:false status:success review:approved -label:robot-says-merge
+
+# `T` and `S` are unbound by default; `t` shadows gh-dash's smart-filtering toggle
+# (v4.26). tuicr fetches the PR through `gh`, so `t` needs no local clone or
+# repoPaths entry; `:submit` inside tuicr posts the review back to GitHub. `T` is
+# the agent-assisted review and `S` sends your own PR to an agent to merge the
+# base, address review comments, or fix CI (docs/pr-review.md): run gh-dash
+# inside herdr with a checkout of the PR's repo open in some herdr workspace.
+keybindings:
+  prs:
+    - key: t
+      name: review in tuicr
+      command: tuicr pr https://github.com/{{.RepoName}}/pull/{{.PrNumber}}
+    - key: T
+      name: review with agent (herdr worktree)
+      command: $HOME/.config/herdr/plugins/config/pickr/review-worktree https://github.com/{{.RepoName}}/pull/{{.PrNumber}}
+    - key: S
+      name: send to agent (conflicts, review comments, CI)
+      command: $HOME/.config/herdr/plugins/config/pickr/pr-agent https://github.com/{{.RepoName}}/pull/{{.PrNumber}}
+    # gh-dash has no reviewer action; `E` is unbound in v4.26.1's keymap.
+    - key: E
+      name: request reviewers
+      command: $HOME/.config/gh-dash/bin/request-reviewers {{.RepoName}} {{.PrNumber}}
+    # Checkout as a worktrunk worktree instead of gh-dash's built-in, which runs
+    # `gh pr checkout` in the main checkout. Overriding both of its keys.
+    - key: C
+      name: check out as worktree (worktrunk)
+      command: $HOME/.config/gh-dash/bin/checkout-pr {{.RepoPath}} {{.RepoName}} {{.PrNumber}}
+    - key: space
+      name: check out as worktree (worktrunk)
+      command: $HOME/.config/gh-dash/bin/checkout-pr {{.RepoPath}} {{.RepoName}} {{.PrNumber}}
+
+# Where checkouts live (gh-dash's {{.RepoPath}}); worktrees are worktrunk's
+# business (worktrunk/.config/worktrunk/config.toml). Exact entries win over the
+# template: checkouts made before the ~/dev/github.com layout stay where they are.
+repoPaths:
+  EBSCO-Nexus/workforce-monorepo: ~/dev/nexus/workforce-monorepo
+  ianseddon/dotfiles: ~/dotfiles
+  ":owner/:repo": ~/dev/github.com/:owner/:repo
 
 # Kanagawa Wave, mapped from kanagawa.nvim's palette
 # (https://github.com/rebelot/kanagawa.nvim, MIT) to match Ghostty, nvim, and tuicr.

@@ -1,0 +1,20 @@
+id = "agent-pickr"
+name = "agent-pickr"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Pick a running agent with fzf. bin/agent-pick prints the chosen pane id for other tools; the jump action focuses it."
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "jump"
+title = "Jump to agent"
+contexts = ["global", "workspace", "pane"]
+command = ["sh", "-c", "exec \"$HERDR_BIN_PATH\" plugin pane open --plugin agent-pickr --entrypoint jump"]
+
+[[panes]]
+id = "jump"
+title = "agent-pickr"
+placement = "popup"
+width = "90%"
+height = "80%"
+command = ["bash", "bin/jump"]

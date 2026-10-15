@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# layout-wait <workspace-id> [timeout-seconds]
+#
+# For scripts that create or reopen a worktree workspace: wait until the
+# worktree.created / worktree.opened hook has laid it out, then print
+#   {"agent":"<pane>","review":"<pane>","shell":"<pane>"}
+# The agent pane is ready for `herdr agent prompt` (or a plain shell when no
+# agent is configured). Exits 1 on timeout (default 90s).
+set -euo pipefail
+
+herdr=${HERDR_BIN_PATH:-herdr}
+ws=${1:?usage: layout-wait <workspace-id> [timeout-seconds]}
+deadline=$(( $(date +%s) + ${2:-90} ))
+
+while [ "$(date +%s)" -lt "$deadline" ]; do
+  panes=$("$herdr" pane list --workspace "$ws" 2>/dev/null) || panes='{}'
+  ids=$(jq -c '[.result.panes[]? | select(.label == "agent" or .label == "review" or .label == "shell")
+               | {key: .label, value: .pane_id}] | from_entries' <<<"$panes")
+  if jq -e 'has("agent") and has("review") and has("shell")' <<<"$ids" >/dev/null; then
+    printf '%s\n' "$ids"
+    exit 0
+  fi
+  sleep 0.5
+done
+echo "layout-wait: $ws was not laid out within ${2:-90}s" >&2
+exit 1

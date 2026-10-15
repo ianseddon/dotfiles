@@ -1,0 +1,37 @@
+# herdr-pickr: Ctrl+click a GitHub PR link in herdr to choose how to review it.
+# Schema: ~/.config/herdr/plugins/github/pickr-*/config/config.example.toml.
+# Rows whose `needs` aren't on PATH are hidden.
+
+[pickr]
+auto = false
+default = "tuicr"
+
+[[backend]]
+key = "t"
+id = "tuicr"
+name = "tuicr — review and submit"
+run = "tuicr pr {url}"
+where = "pane"
+needs = ["tuicr"]
+platforms = ["github"]
+
+# PR worktree workspace (worktree-layout) with its agent beside tuicr; both read
+# and add draft comments in the same tuicr session. See review-worktree here.
+[[backend]]
+key = "a"
+id = "agent"
+name = "agent + tuicr — PR worktree, agent beside tuicr"
+run = '"$HERDR_PLUGIN_CONFIG_DIR/review-worktree" {url}'
+where = "pane"
+needs = ["tuicr", "gh", "git", "jq"]
+platforms = ["github"]
+
+# Ctrl+click on a PR link no longer opens the browser by itself.
+[[backend]]
+key = "o"
+id = "browser"
+name = "open in browser"
+run = "xdg-open {url}"
+where = "detach"
+needs = ["xdg-open"]
+platforms = ["github"]

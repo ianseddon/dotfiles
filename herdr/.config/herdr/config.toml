@@ -3,14 +3,11 @@ onboarding = false
 # tmux session -> herdr workspace, tmux window -> herdr tab, tmux pane -> herdr pane
 
 [theme]
-# tmux ran on the terminal's own palette (bg=default, fg=default, ANSI blue accents)
-name = "terminal"
+# herdr's built-in Kanagawa (Wave) palette, matching Ghostty, nvim, gh-dash, and
+# tuicr. The "terminal" theme it replaces drew bars and popup borders in Ghostty's
+# ANSI black (#090618, a navy that isn't in kanagawa.nvim's UI palette).
+name = "kanagawa"
 auto_switch = false
-
-[theme.custom]
-# The active tab is drawn as panel_bg text on an accent background, so panel_bg
-# has to be dark for it to read - same colors as status-left's "#[fg=black,bg=blue]"
-panel_bg = "black"
 
 [terminal]
 # Matches -c "#{pane_current_path}" on every split, window, and session
@@ -34,10 +31,13 @@ close_pane = ["prefix+x"]
 zoom = "prefix+z"
 last_pane = "prefix+;"
 
-focus_pane_left = "ctrl+alt+h"
-focus_pane_down = "ctrl+alt+j"
-focus_pane_up = "ctrl+alt+k"
-focus_pane_right = "ctrl+alt+l"
+# ctrl+h/j/k/l move between panes and nvim splits through vim-herdr-navigation
+# (the [[keys.command]] entries below). The native focus actions stay unbound:
+# their defaults, prefix+h/j/k/l, would collide with split_horizontal above.
+focus_pane_left = ""
+focus_pane_down = ""
+focus_pane_up = ""
+focus_pane_right = ""
 
 resize_mode = ["prefix+ctrl+h", "prefix+ctrl+j", "prefix+ctrl+k", "prefix+ctrl+l"]
 
@@ -69,9 +69,85 @@ close_workspace = "prefix+shift+k"
 previous_workspace = ["prefix+shift+p", "alt+k"]
 next_workspace = ["prefix+shift+n", "alt+j"]
 
-[ui]
-accent = "blue"
+# vim-herdr-navigation (herdr plugin install paulbkim-dev/vim-herdr-navigation):
+# moves herdr focus, or forwards the key when nvim is in front so it moves
+# between its splits and crosses into herdr at an edge. This shadows the shell's
+# own ctrl+h/j/k/l (fish: ctrl+l clear, ctrl+k kill-line; omp: ctrl+k
+# delete-to-end, ctrl+j newline) in every non-vim pane.
+[[keys.command]]
+key = "ctrl+h"
+type = "plugin_action"
+command = "vim-herdr-navigation.left"
+description = "focus left (pane or nvim split)"
 
+[[keys.command]]
+key = "ctrl+j"
+type = "plugin_action"
+command = "vim-herdr-navigation.down"
+description = "focus down (pane or nvim split)"
+
+[[keys.command]]
+key = "ctrl+k"
+type = "plugin_action"
+command = "vim-herdr-navigation.up"
+description = "focus up (pane or nvim split)"
+
+[[keys.command]]
+key = "ctrl+l"
+type = "plugin_action"
+command = "vim-herdr-navigation.right"
+description = "focus right (pane or nvim split)"
+
+# Local plugins: herdr/.local/share/herdr-plugins, linked with `herdr plugin link`
+[[keys.command]]
+key = "prefix+a"
+type = "plugin_action"
+command = "agent-pickr.jump"
+description = "jump to agent"
+
+[[keys.command]]
+key = "prefix+t"
+type = "plugin_action"
+command = "tuicr-send.send"
+description = "send tuicr review to agent"
+
+# New worktree workspaces are laid out by a hook; this applies the same layout
+# to any other single-pane workspace.
+[[keys.command]]
+key = "prefix+shift+l"
+type = "plugin_action"
+command = "worktree-layout.apply"
+description = "lay out workspace: agent, review, shell"
+
+# prefix+w stays herdr's own workspace picker (open workspaces only)
+[[keys.command]]
+key = "prefix+f"
+type = "plugin_action"
+command = "workspace-pickr.open"
+description = "find project: focus or open a workspace"
+
+# herdr-worktrunk (devashish2203/herdr-worktrunk): worktrees through worktrunk
+# (`wt`), so the repo's setup/teardown hooks run. prefix+shift+g replaces herdr's
+# own new_worktree, which has no hooks, so there's one way to create a worktree.
+[[keys.command]]
+key = "prefix+shift+g"
+type = "plugin_action"
+command = "worktrunk.open"
+description = "worktree: switch or create (from default branch)"
+
+[[keys.command]]
+key = "prefix+ctrl+g"
+type = "plugin_action"
+command = "worktrunk.remove"
+description = "worktree: remove"
+
+[[keys.command]]
+key = "prefix+shift+m"
+type = "plugin_action"
+command = "worktrunk.merge"
+description = "worktree: merge into target branch, then remove"
+
+[ui]
 # tmux drew single-line dividers between adjacent panes and no outer frame
 pane_gaps = false
 pane_outer_borders = false
@@ -95,6 +171,39 @@ tab_bar_right = [{ type = "zoom" }, { type = "hostname" }]
 # the basename of the pane cwd. This is what Hyprland shows in the group bar,
 # and it resolves on the server so remote sessions name the remote host.
 window_title = "{hostname}: {workspace}"
+
+# Space rows: herdr's default two, then a third for herdr-git-status
+# (ianseddon/herdr-git-status, a fork that can drop the "CI"/"R"/"M" labels;
+# glyphs in plugins/config/git-status/.env). Glyphs and colours follow gh-dash's PR
+# list, using the same theme colours as gh-dash/.config/gh-dash/config.yml: success,
+# error, warning, faint. The badges keep their own row so the branch stays readable;
+# a row with nothing to show isn't drawn, so spaces without a PR stay at two lines.
+# The PR number ($gst_pr) comes last, in the default foreground; without the
+# labels it fits on worktrees nested under their repo. Each state is its own
+# token because token styles are static; only one CI, one review, and one merge
+# token is ever set per space.
+status_indicators = "dots"
+[ui.sidebar.spaces]
+rows = [
+  ["state_icon", "workspace"],
+  ["branch", "git_status"],
+  [
+    { token = "$gst_ci_ok", fg = "#98BB6C" },           # success
+    { token = "$gst_ci_fail", fg = "#E82424" },         # error
+    { token = "$gst_ci_run", fg = "#FF9E3B" },          # warning
+    { token = "$gst_ci_manual", fg = "#FF9E3B" },       # warning: waits on a person
+    { token = "$gst_ci_none", fg = "#727169" },         # faint: cancelled or skipped
+    { token = "$gst_review_conflict", fg = "#E82424" },
+    { token = "$gst_review_changes", fg = "#E82424" },
+    { token = "$gst_review_approved", fg = "#98BB6C" },
+    { token = "$gst_review_awaiting", fg = "#FF9E3B" }, # a reviewer owes you a review
+    { token = "$gst_review_required", fg = "#727169" }, # only branch protection does
+    { token = "$gst_review_draft", fg = "#727169" },
+    { token = "$gst_merge_auto", fg = "#FF9E3B" },      # gh-dash's merge-queue colour
+    { token = "$gst_merge_done", fg = "#957FB8" },      # oniViolet
+    { token = "$gst_pr" },
+  ],
+]
 
 [ui.toast]
 delivery = "system"

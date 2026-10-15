@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# agent-pick: choose a running herdr agent with fzf and print its pane id.
+#
+#   agent-pick [--default <pane-id>] [--title <text>] [--header <text>]
+#              [--footer <text>] [--expect <keys>] [--cwd <dir>] [--new <text>]
+#
+# Telescope-style layout: prompt and results on the left (title on the prompt
+# border, header inside the results frame, footer for key hints), and the
+# highlighted agent's recent output on the right. The default target
+# (--default, else $AGENT_PICKR_TARGET) is listed first, preselected, and
+# marked * while that pane still runs an agent. --cwd lists only agents whose
+# directory is <dir> or below it. --new adds a last row labelled <text> that
+# prints `new` instead of a pane id. With --expect, prints the key
+# that accepted the selection (empty for enter) on the first line and the pane
+# id on the second, like fzf. Exits 1 when cancelled or when there is nothing
+# to pick. Colours come from FZF_DEFAULT_OPTS.
+set -euo pipefail
+
+herdr=${HERDR_BIN_PATH:-herdr}
+
+# Preview mode, run by fzf for the highlighted row: status line, then the
+# pane's recent output without the blank rows below an agent's input box.
+if [ "${1:-}" = --preview ]; then
+  pane=$2 status=$3 cwd=$4
+  [ "$pane" = new ] && { printf '\e[2mstarts a new agent\e[0m\n'; exit 0; }
+  printf '\e[2m%s · %s · %s\e[0m\n\n' "$status" "$pane" "$cwd"
+  "$herdr" pane read "$pane" --source recent --lines 300 --ansi 2>/dev/null |
+    awk '{ line[NR] = $0; plain = $0; gsub(/\033\[[0-9;?]*[A-Za-z]/, "", plain); if (plain ~ /[^[:space:]]/) last = NR }
+         END { for (i = 1; i <= last; i++) print line[i] }' |
+    tail -n "$((${FZF_PREVIEW_LINES:-40} - 2))"
+  exit 0
+fi
+
+default=${AGENT_PICKR_TARGET:-}
+title=" Agents "
+header=""
+footer=""
+expect=""
+cwd=""
+new=""
+while [ $# -gt 0 ]; do
+  case $1 in
+    --default) default=${2-}; shift 2 ;;
+    --title) title=" ${2-} "; shift 2 ;;
+    --header) header=${2-}; shift 2 ;;
+    --footer) footer=${2-}; shift 2 ;;
+    --expect) expect=${2-}; shift 2 ;;
+    --cwd) cwd=${2-}; shift 2 ;;
+    --new) new=${2-}; shift 2 ;;
+    -h | --help) sed -n '2,17p' "$0"; exit 0 ;;
+    *) echo "agent-pick: unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+for bin in fzf jq; do
+  command -v "$bin" >/dev/null || { echo "agent-pick: $bin is not on PATH" >&2; exit 2; }
+done
+self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+
+labels=$("$herdr" workspace list | jq -c '[.result.workspaces[] | {key: .workspace_id, value: .label}] | from_entries')
+# Fields: 1 pane id, 2 display, 3 agent, 4 status, 5 workspace, 6 cwd. Only the
+# display is shown; the rest feed the preview and its label.
+rows=$("$herdr" agent list | jq -r --arg def "$default" --argjson ws "$labels" --arg home "$HOME" --arg dir "$cwd" '
+  .result.agents
+  | map(select(.agent != null))
+  | map(select($dir == "" or .cwd == $dir or ((.cwd // "") | startswith($dir + "/"))))
+  | sort_by([(.pane_id != $def), .workspace_id, .pane_id])[]
+  | [.pane_id, (.pane_id == $def), .agent, .agent_status, ($ws[.workspace_id] // .workspace_id),
+     ((.cwd // "") | if startswith($home) then "~" + .[($home | length):] else . end)]
+  | @tsv' | awk -F'\t' '
+  BEGIN {
+    glyph["working"] = "\033[33m●"; glyph["blocked"] = "\033[31m●"
+    glyph["idle"] = "\033[32m○";    glyph["done"] = "\033[34m✓"
+  }
+  {
+    g = ($4 in glyph) ? glyph[$4] : "\033[2m·"
+    tag = ($2 == "true") ? " \033[33m*\033[0m" : ""
+    printf "%s\t%s\033[0m %-9s %-22s \033[2m%s\033[0m%s\t%s\t%s\t%s\t%s\n", $1, g, $3, $5, $1, tag, $3, $4, $5, $6
+  }')
+if [ -n "$new" ]; then
+  rows=${rows:+"$rows"$'\n'}$(printf 'new\t\033[36m+\033[0m %s\t\t\t\t\n' "$new")
+fi
+[ -n "$rows" ] || { echo "agent-pick: no agents running" >&2; exit 1; }
+
+fzf_args=(
+  --delimiter=$'\t' --with-nth=2 --ansi --no-multi --cycle
+  --layout=reverse --height=100% --info=inline-right
+  --prompt='❯ ' --pointer='▶'
+  --input-border=rounded --input-label="$title"
+  --list-border=rounded
+  --with-shell='bash -c'
+  --preview="$(printf '%q' "$self") --preview {1} {4} {6}"
+  --preview-window=right,60%,border-rounded
+  --bind='focus:transform-preview-label:[ -n {3} ] && printf " %s · %s " {3} {5} || echo " new "'
+)
+[ -n "$header" ] && fzf_args+=(--header="$header" --header-border=inline)
+[ -n "$footer" ] && fzf_args+=(--footer="$footer")
+[ -n "$expect" ] && fzf_args+=(--expect="$expect")
+
+selection=$(printf '%s\n' "$rows" | fzf "${fzf_args[@]}") || exit 1
+if [ -n "$expect" ]; then
+  sed -n 1p <<<"$selection"
+  sed -n 2p <<<"$selection" | cut -f1
+else
+  cut -f1 <<<"$selection"
+fi

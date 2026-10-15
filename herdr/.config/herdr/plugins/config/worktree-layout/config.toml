@@ -1,0 +1,4 @@
+# worktree-layout (herdr/.local/share/herdr-plugins/worktree-layout).
+# Agent started top-left in every laid-out workspace: any `herdr agent start
+# --kind` value. Empty leaves the top-left pane as a plain shell.
+agent = "omp"

@@ -1,0 +1,265 @@
+#!/usr/bin/env bash
+# Popup entrypoint: pick a project with fzf and focus or open its workspace.
+#
+# Rows, in order: open herdr workspaces (●, coloured by agent status, * marks
+# the focused one), git repos among the top $WORKSPACE_PICKR_ZOXIDE (40) zoxide
+# directories that are not open (○; a subdirectory counts as its repo), then the
+# linked worktrees of every listed repo that are not open (◌). Worktrees come
+# last so a repo with dozens of them stays searchable by branch without
+# crowding the top. The preview shows an open workspace's panes, then
+# `git status -sb` and the last commits.
+#
+# enter: focus the workspace, `herdr worktree open` a worktree, or
+# `herdr workspace create` a repo (labelled with its basename). ctrl-n prompts
+# for a new branch and runs `herdr worktree create` from the row's main
+# checkout, based on its local default branch (origin/HEAD's name, else main
+# or master, else HEAD). The base is not fetched; it is not origin/<default>
+# because the new branch would then track the remote default branch.
+# Errors keep the popup open until a key is pressed.
+set -euo pipefail
+
+herdr=${HERDR_BIN_PATH:-herdr}
+
+tilde() {
+  case $1 in
+    "$HOME" | "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+# Preview mode, run by fzf for the highlighted row.
+if [ "${1:-}" = --preview ]; then
+  kind=$2 ws=$3 path=$4
+  printf '\e[2m%s\e[0m\n\n' "$(tilde "$path")"
+  if [ "$kind" = ws ]; then
+    "$herdr" pane list --workspace "$ws" | jq -r --arg home "$HOME" '
+      .result.panes[]
+      | [.pane_id, (.agent // "shell"), .agent_status, (.label // ""),
+         ((.cwd // "") | if startswith($home) then "~" + .[($home | length):] else . end)]
+      | @tsv' | awk -F'\t' '
+      BEGIN {
+        glyph["working"] = "\033[33m●"; glyph["blocked"] = "\033[31m●"
+        glyph["idle"] = "\033[32m○";    glyph["done"] = "\033[34m✓"
+      }
+      {
+        g = ($3 in glyph) ? glyph[$3] : "\033[2m·"
+        state = ($3 == "unknown") ? "" : $3
+        printf "%s\033[0m %-8s %-8s \033[2m%-7s\033[0m %s\033[2m%s\033[0m\n", g, $2, state, $1, ($4 == "" ? "" : $4 " "), $5
+      }'
+    echo
+  fi
+  if git -C "$path" rev-parse --git-dir >/dev/null 2>&1; then
+    git -C "$path" -c color.status=always status -sb | head -n 20
+    echo
+    git -C "$path" log --oneline --color=always -8
+  else
+    printf '\e[2mnot a git repository\e[0m\n'
+  fi
+  exit 0
+fi
+
+fail() {
+  printf 'workspace-pickr: %s\n' "$*" >&2
+  read -rsn1 -p 'press any key to close' || true
+  exit 1
+}
+
+# Run a herdr command, failing with its error message (herdr prints a JSON
+# error object on stderr).
+run() {
+  local err msg
+  err=$("$@" 2>&1 >/dev/null) && return 0
+  msg=$(jq -r '.error.message // empty' <<<"$err" 2>/dev/null) || msg=""
+  fail "${msg:-$err}"
+}
+
+for bin in fzf jq git; do
+  command -v "$bin" >/dev/null || fail "$bin is not on PATH"
+done
+self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+
+# locate <dir>: find the checkout containing <dir> by reading .git directly, so
+# listing stays fork-free. Sets root (the checkout), kind (repo or wt for a
+# linked worktree), src (the main checkout) and branch (short sha if
+# detached). Returns 1 outside git; stops below $HOME.
+locate() {
+  local d=$1 gitdir="" line=""
+  root="" kind="" src="" branch=""
+  while [[ $d == /?* && $d != "$HOME" ]]; do
+    if [[ -f $d/.git/HEAD ]]; then
+      root=$d kind=repo src=$d gitdir=$d/.git
+      break
+    elif [[ -f $d/.git ]]; then
+      read -r line <"$d/.git" || true
+      gitdir=${line#gitdir: }
+      [[ $gitdir == /* ]] || gitdir=$d/$gitdir
+      root=$d
+      if [[ $gitdir == */.git/worktrees/* ]]; then
+        kind=wt src=${gitdir%/.git/worktrees/*}
+        [[ $src != */../* && $src != */./* ]] || src=$(cd "$src" && pwd)
+      else
+        kind=repo src=$d
+      fi
+      break
+    fi
+    d=${d%/*}
+  done
+  [[ -n $kind ]] || return 1
+  line=""
+  { read -r line <"$gitdir/HEAD"; } 2>/dev/null || true
+  case $line in
+    "ref: refs/heads/"*) branch=${line#ref: refs/heads/} ;;
+    *) branch=${line:0:9} ;;
+  esac
+}
+
+# Raw rows, \x1f-separated: kind, workspace id, path, main checkout, label,
+# branch, glyph state (agent status, or repo/wt), detail, focused.
+rows=()
+row() { local IFS=$'\x1f'; rows+=("$*"); }
+declare -A seen=() listed=()
+srcs=()
+add_src() { [[ -z $1 || -n ${listed[$1]-} ]] || { listed[$1]=1; srcs+=("$1"); }; }
+
+# Open workspaces in sidebar order. A workspace's path is its worktree
+# checkout, else its shortest pane cwd; agents come from its panes.
+open=$(jq -rn --argjson ws "$("$herdr" workspace list)" --argjson panes "$("$herdr" pane list)" '
+  ($panes.result.panes | group_by(.workspace_id) | map({
+      key: .[0].workspace_id,
+      value: {
+        cwd: (map(.cwd // empty) | min_by(length) // ""),
+        agents: (map(select(.agent != null) | "\(.agent) \(.agent_status)") | join(", "))
+      }
+    }) | from_entries) as $p
+  | $ws.result.workspaces | sort_by(.number)[]
+  | [.workspace_id, .label, .agent_status, .focused,
+     (.worktree.checkout_path // $p[.workspace_id].cwd // ""), ($p[.workspace_id].agents // "")]
+  | join("\u001f")') || fail "cannot list workspaces"
+while IFS=$'\x1f' read -r id label status focused path agents; do
+  [ -n "$id" ] || continue
+  root="" kind="" src="" branch=""
+  if [ -n "$path" ] && locate "$path"; then
+    path=$root
+    seen[$root]=1
+    add_src "$src"
+  fi
+  row ws "$id" "$path" "$src" "$label" "$branch" "$status" "$agents" "$focused"
+done <<<"$open"
+
+# zoxide's top directories that are in git, mapped to their main checkout.
+if command -v zoxide >/dev/null; then
+  while IFS= read -r dir; do
+    locate "$dir" || continue
+    if [ "$kind" = wt ]; then locate "$src" || continue; fi
+    [ -z "${seen[$root]-}" ] || continue
+    seen[$root]=1
+    add_src "$root"
+    row repo "" "$root" "$root" "${root##*/}" "$branch" repo "" false
+  done < <(zoxide query --list | head -n "${WORKSPACE_PICKR_ZOXIDE:-40}")
+fi
+
+# Linked worktrees of every listed repo that are not open.
+for s in "${srcs[@]}"; do
+  wt="" br=""
+  while read -r key value; do
+    case $key in
+      worktree) wt=$value br="" ;;
+      HEAD) br=${value:0:9} ;;
+      branch) br=${value#refs/heads/} ;;
+      bare | prunable) wt="" ;;
+      "")
+        if [ -n "$wt" ] && [ -z "${seen[$wt]-}" ]; then
+          seen[$wt]=1
+          row wt "" "$wt" "$s" "${wt##*/}" "$br" wt "${s##*/}" false
+        fi
+        wt=""
+        ;;
+    esac
+  done < <(git -C "$s" worktree list --porcelain 2>/dev/null; echo)
+done
+[ ${#rows[@]} -gt 0 ] || fail "no workspaces, zoxide repos or worktrees to list"
+
+# Display: glyph, label, branch, detail (agents or the worktree's repo), path.
+# Fields: 1 kind, 2 display, 3 workspace id, 4 path, 5 main checkout,
+# 6 label, 7 branch. Only the display is shown and searched.
+list=$(printf '%s\n' "${rows[@]}" | awk -F'\x1f' -v home="$HOME" '
+  function fit(s, w) { return length(s) > w ? substr(s, 1, w - 1) "…" : s }
+  {
+    n = NR; for (i = 1; i <= NF; i++) f[n, i] = $i
+    if (length($5) > lw) lw = length($5); if (length($6) > bw) bw = length($6)
+  }
+  END {
+    if (lw > 24) lw = 24; if (bw > 20) bw = 20
+    glyph["working"] = "\033[33m●"; glyph["blocked"] = "\033[31m●"
+    glyph["idle"] = "\033[32m●";    glyph["done"] = "\033[34m●"
+    glyph["repo"] = "\033[36m○";    glyph["wt"] = "\033[2m◌"
+    for (r = 1; r <= n; r++) {
+      g = (f[r, 7] in glyph) ? glyph[f[r, 7]] : "●"
+      path = f[r, 3]
+      if (index(path, home) == 1) path = "~" substr(path, length(home) + 1)
+      detail = f[r, 8]
+      detail = (f[r, 1] == "wt") ? "\033[2m↳ " detail "\033[0m " : (detail != "" ? "\033[33m" detail "\033[0m " : "")
+      tag = (f[r, 9] == "true") ? "\033[33m*\033[0m" : " "
+      printf "%s\t%s\033[0m %-" lw "s %s \033[35m%-" bw "s\033[0m %s\033[2m%s\033[0m\t%s\t%s\t%s\t%s\t%s\n",
+        f[r, 1], g, fit(f[r, 5], lw), tag, fit(f[r, 6], bw), detail, path,
+        f[r, 2], f[r, 3], f[r, 4], f[r, 5], f[r, 6]
+    }
+  }')
+
+fzf_args=(
+  --delimiter=$'\t' --with-nth=2 --ansi --no-multi --cycle
+  --layout=reverse --height=100% --info=inline-right
+  --prompt='❯ ' --pointer='▶'
+  --input-border=rounded --input-label=' Workspaces '
+  --list-border=rounded
+  --header=$'● open  \e[36m○\e[0m repo  \e[2m◌\e[0m worktree' --header-border=inline
+  --footer='enter open · ctrl-n worktree · esc cancel'
+  --expect=ctrl-n
+  --with-shell='bash -c'
+  --preview="$(printf '%q' "$self") --preview {1} {3} {4}"
+  --preview-window=right,60%,border-rounded
+  --bind='focus:transform-preview-label:[ -n {7} ] && printf " %s · %s " {6} {7} || printf " %s " {6}'
+)
+selection=$(printf '%s\n' "$list" | fzf "${fzf_args[@]}") || exit 0
+key=$(sed -n 1p <<<"$selection")
+row=$(sed -n 2p <<<"$selection")
+IFS=$'\x1f' read -r kind _ ws path src label branch <<<"${row//$'\t'/$'\x1f'}"
+
+if [ "$key" = ctrl-n ]; then
+  [ -n "$src" ] || fail "$label is not in a git repository"
+  base=""
+  if ref=$(git -C "$src" symbolic-ref -q --short refs/remotes/origin/HEAD); then
+    git -C "$src" show-ref -q --verify "refs/heads/${ref#*/}" && base=${ref#*/}
+  fi
+  for ref in main master; do
+    [ -z "$base" ] && git -C "$src" show-ref -q --verify "refs/heads/$ref" && base=$ref
+  done
+  [ -n "$base" ] || base=$(git -C "$src" rev-parse --abbrev-ref HEAD)
+  query="" note=""
+  while :; do
+    rc=0
+    query=$(fzf --print-query --query="$query" --layout=reverse --height=100% --no-info \
+      --prompt='branch ❯ ' --pointer='▶' \
+      --input-border=rounded --input-label=" New worktree · ${src##*/} " \
+      --list-border=rounded --header="from $base (local, not fetched)$note" --header-border=inline \
+      --footer='enter create · esc cancel' </dev/null) || rc=$?
+    [ "$rc" -ne 130 ] || exit 0
+    query=$(sed -n 1p <<<"$query")
+    [ -n "$query" ] || exit 0
+    if ! name=$(git check-ref-format --branch "$query" 2>/dev/null); then
+      note=$'\n\e[31m'"not a valid branch name: $query"$'\e[0m'
+    elif git -C "$src" show-ref -q --verify "refs/heads/$name"; then
+      note=$'\n\e[31m'"branch $name already exists"$'\e[0m'
+    else
+      break
+    fi
+  done
+  run "$herdr" worktree create --cwd "$src" --branch "$name" --base "$base" --focus
+  exit 0
+fi
+
+case $kind in
+  ws) run "$herdr" workspace focus "$ws" ;;
+  wt) run "$herdr" worktree open --cwd "$src" --path "$path" --focus ;;
+  repo) run "$herdr" workspace create --cwd "$path" --label "$label" --focus ;;
+esac

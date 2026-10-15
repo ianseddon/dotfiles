@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# show-in-review <base>..<head>: for an agent inside herdr, open tuicr on a commit
+# range of its checkout where the user reads reviews, and print the session slug
+# for `tuicr review add --session`.
+#
+# That is the `review` pane of the agent's workspace (worktree-layout), when it
+# is at its menu or a shell prompt; tuicr's exit returns it to the menu. Without
+# a review pane, tuicr opens in a split to the right of the agent. A review pane
+# that is busy (tuicr already open, or anything else) is left alone: exit 1, so
+# the agent asks the user to free it.
+#
+# pr-agent's review-comments prompt runs this.
+set -euo pipefail
+
+herdr=${HERDR_BIN_PATH:-herdr}
+menu="${XDG_DATA_HOME:-$HOME/.local/share}/herdr-plugins/worktree-layout/bin/review-pane"
+die() { printf 'show-in-review: %s\n' "$*" >&2; exit 1; }
+
+range=${1:-}
+[[ "$range" =~ ^[A-Za-z0-9._/@^~-]+\.\.[A-Za-z0-9._/@^~-]+$ ]] || die "usage: show-in-review <base>..<head>"
+[ "${HERDR_ENV:-}" = 1 ] || die "run inside herdr"
+top=$(git rev-parse --show-toplevel) || die "not in a git checkout"
+
+info() { "$herdr" pane process-info --pane "$1" | jq -c .result.process_info; }
+at_shell() { jq -e '.shell_pid != null and .foreground_process_group_id == .shell_pid' >/dev/null <<<"$1"; }
+at_menu() { jq -e 'any(.foreground_processes[]?; (.argv // []) | any(test("/review-pane$")))' >/dev/null <<<"$1"; }
+
+pane=$("$herdr" pane list --workspace "${HERDR_WORKSPACE_ID:?}" |
+  jq -r '.result.panes[] | select(.label == "review") | .pane_id' | head -n1)
+if [ -n "$pane" ]; then
+  state=$(info "$pane")
+  if at_menu "$state"; then
+    "$herdr" pane send-keys "$pane" q >/dev/null
+    for _ in $(seq 1 50); do
+      state=$(info "$pane")
+      at_shell "$state" && break
+      sleep 0.1
+    done
+  fi
+  at_shell "$state" || die "review pane $pane is busy; ask the user to quit what runs there, then retry"
+  cmd="tuicr -r $range; $(printf '%q' "$menu")"
+else
+  pane=$("$herdr" pane split "${HERDR_PANE_ID:?}" --direction right --cwd "$top" --no-focus \
+    --env "AGENT_PICKR_TARGET=$HERDR_PANE_ID" | jq -r .result.pane.pane_id)
+  cmd="tuicr -r $range"
+fi
+"$herdr" pane run "$pane" "$cmd" >/dev/null
+
+# tuicr's active-session registry maps its pid to the session slug.
+active="${XDG_DATA_HOME:-$HOME/.local/share}/tuicr/reviews/active_sessions.json"
+for _ in $(seq 1 100); do
+  pid=$("$herdr" pane process-info --pane "$pane" | jq -r '
+    .result.process_info.foreground_processes[]
+    | select((.argv[0] // "") | test("(^|/)tuicr$")) | .pid' | head -n1)
+  if [ -n "$pid" ]; then
+    slug=$(jq -r --argjson pid "$pid" '.sessions[] | select(.pid == $pid) | .slug' "$active" 2>/dev/null | head -n1)
+    [ -n "$slug" ] && { printf '%s\n' "$slug"; exit 0; }
+  fi
+  sleep 0.1
+done
+die "tuicr did not start in $pane (empty range, or an error on screen there)"

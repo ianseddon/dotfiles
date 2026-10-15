@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Popup entrypoint: pick an agent and focus its pane.
+set -euo pipefail
+pane=$("$HERDR_PLUGIN_ROOT/bin/agent-pick" --title "Jump to agent" --footer "enter jump · esc cancel") || exit 0
+"${HERDR_BIN_PATH:-herdr}" agent focus "$pane" >/dev/null

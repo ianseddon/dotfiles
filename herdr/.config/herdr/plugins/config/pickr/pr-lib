@@ -1,0 +1,80 @@
+# Sourced by review-worktree and pr-agent (not run on its own): errors, the PR
+# URL, validated branch names, the checkout of the PR's repo open in herdr, and
+# the worktree-layout panes of a new worktree workspace.
+# Both are launched inside herdr from gh-dash or pickr's chooser overlay; errors
+# wait for a key so they stay readable before the caller's screen returns.
+
+herdr=${HERDR_BIN_PATH:-herdr}
+prog=${0##*/}
+
+fail() {
+  printf '\n%s: %s\n' "$prog" "$*" >&2
+  "$herdr" notification show "$prog failed" --body "$*" >/dev/null 2>&1 || true
+  if [ -t 0 ]; then read -rsn1 -p 'press any key to close' || true; fi
+  exit 1
+}
+note() { printf '%s\n' "$*"; }
+
+# pr_init <url> [extra tools...]: check the environment and set owner, name,
+# num, repo, url, and label from the PR URL.
+pr_init() {
+  [ "${HERDR_ENV:-}" = 1 ] || fail "run inside herdr"
+  local bin
+  for bin in gh git jq "${@:2}"; do
+    command -v "$bin" >/dev/null || fail "$bin is not on PATH"
+  done
+
+  [[ "$1" =~ ^https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/pull/([0-9]+) ]] ||
+    fail "not a GitHub PR URL: ${1:-<none>}"
+  owner=${BASH_REMATCH[1]} name=${BASH_REMATCH[2]} num=${BASH_REMATCH[3]}
+  repo="$owner/$name"
+  url="https://github.com/$repo/pull/$num"
+  label="$name#$num"
+}
+
+# pr_ref <branch>: print the branch name if it is safe to put in a prompt or a
+# refspec. Git allows quotes, backticks, and $ in branch names; we don't.
+pr_ref() {
+  [[ "$1" =~ ^[A-Za-z0-9._/-]+$ ]] && git check-ref-format --branch "$1" >/dev/null 2>&1 ||
+    fail "unexpected branch name: $1"
+  printf '%s\n' "$1"
+}
+
+# pr_find_source: set src (source checkout), remote (its remote for the repo),
+# and worktrees (`herdr worktree list` JSON) from the first checkout already
+# open in herdr, as a workspace repo root or pane cwd, with a GitHub remote for
+# the repo. Never clones.
+pr_find_source() {
+  local repo_lc remote_re dir top
+  repo_lc=$(tr '[:upper:]' '[:lower:]' <<<"$repo")
+  remote_re="github[.]com[:/]${repo_lc//./[.]}([.]git)?\$"
+  src="" remote=""
+  while IFS= read -r dir; do
+    [ -d "$dir" ] || continue
+    top=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null) || continue
+    remote=$(git -C "$top" remote -v | awk -v re="$remote_re" '$3 == "(fetch)" && tolower($2) ~ re { print $1; exit }')
+    [ -n "$remote" ] && { src=$top; break; }
+  done < <({
+    "$herdr" workspace list | jq -r '.result.workspaces[].worktree.repo_root // empty'
+    "$herdr" pane list | jq -r '.result.panes[] | .cwd, .foreground_cwd | values'
+  } | awk '!seen[$0]++')
+  [ -n "$src" ] || fail "no checkout of $repo is open in herdr; open one in a workspace first"
+
+  worktrees=$("$herdr" worktree list --cwd "$src") || fail "herdr cannot list worktrees for $src"
+  src=$(jq -r '.result.source.source_checkout_path' <<<"$worktrees")
+  note "source  $src ($remote)"
+}
+
+# pr_layout <workspace-id>: wait for the worktree-layout hook to lay out a
+# workspace herdr just created or reopened (docs/herdr-workspaces.md), then set
+# agent_pane and review_pane. The agent is ready for `herdr agent prompt`.
+pr_layout() {
+  local wait panes
+  wait="${XDG_DATA_HOME:-$HOME/.local/share}/herdr-plugins/worktree-layout/bin/layout-wait"
+  [ -x "$wait" ] || fail "the worktree-layout plugin is not installed ($wait)"
+  panes=$("$wait" "$1") || fail "worktree-layout did not lay out $1"
+  agent_pane=$(jq -r .agent <<<"$panes")
+  review_pane=$(jq -r .review <<<"$panes")
+  "$herdr" agent get "$agent_pane" >/dev/null 2>&1 ||
+    fail "no agent in $agent_pane; set \`agent\` in the worktree-layout config"
+}

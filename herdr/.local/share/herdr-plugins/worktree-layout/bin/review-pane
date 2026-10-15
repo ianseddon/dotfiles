@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# The review pane of a worktree layout: a one-key menu that opens tuicr on this
+# worktree and comes back when tuicr exits.
+#
+#   enter  review against the base branch: commits since the merge-base plus
+#          uncommitted changes, or the PR when the branch is a PR review
+#   b      against the base branch (even on a PR review branch)
+#   w      uncommitted changes only
+#   c      choose commits or a saved session in tuicr's own picker
+#   p      the GitHub PR for this branch
+#   q      leave the menu for a plain shell (run review-pane to come back)
+#
+# The base is the remote's default branch (origin/HEAD, else origin/main,
+# origin/master, main, master) as of the last fetch. A branch is a PR review when
+# git config branch.<branch>.herdrReviewUrl holds the PR URL; scripts that open
+# PR reviews set it.
+set -uo pipefail
+
+base_ref() {
+  local r
+  r=$(git symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null) && { echo "$r"; return; }
+  for r in origin/main origin/master main master; do
+    git rev-parse -q --verify "$r^{commit}" >/dev/null && { echo "$r"; return; }
+  done
+}
+
+pause() { read -rsn1 -p "$1 (any key)" _; }
+
+run() { # run tuicr; keep its error on screen when it fails
+  tuicr "$@" || pause "tuicr exited with status $?."
+}
+
+review_base() {
+  local base mb
+  base=$(base_ref)
+  [ -n "$base" ] || { pause "No base branch found (origin/HEAD, main, master)."; return; }
+  mb=$(git merge-base "$base" HEAD) || { pause "No merge-base with $base."; return; }
+  if git diff --quiet "$mb" && [ -z "$(git ls-files --others --exclude-standard | head -n1)" ]; then
+    pause "Nothing to review against $base yet."
+    return
+  fi
+  if [ "$mb" = "$(git rev-parse HEAD)" ]; then
+    run -w # no commits yet: an empty range would make tuicr refuse
+  else
+    run -r "$mb..HEAD" -w
+  fi
+}
+
+review_pr() {
+  local url=$1
+  [ -n "$url" ] || url=$(gh pr view --json url -q .url 2>/dev/null)
+  [ -n "$url" ] || { pause "No GitHub PR for this branch."; return; }
+  run pr "$url"
+}
+
+while :; do
+  branch=$(git branch --show-current 2>/dev/null)
+  pr_url=$(git config --get "branch.$branch.herdrReviewUrl" 2>/dev/null)
+  base=$(base_ref)
+  printf '\033[H\033[2J'
+  printf '\033[1mreview\033[0m  %s\n\n' "${branch:-detached HEAD}"
+  if [ -n "$pr_url" ]; then
+    printf '  \033[1menter\033[0m  this PR in tuicr (%s)\n' "$pr_url"
+    printf '  b      against %s\n' "${base:-the base branch}"
+  else
+    printf '  \033[1menter\033[0m  against %s (commits + uncommitted)\n' "${base:-the base branch}"
+    printf '  p      this branch'"'"'s GitHub PR\n'
+  fi
+  printf '  w      uncommitted only\n'
+  printf '  c      choose commits or a saved session\n'
+  printf '  q      plain shell\n'
+  read -rsn1 key || exit 0
+  case "$key" in
+    '') if [ -n "$pr_url" ]; then review_pr "$pr_url"; else review_base; fi ;;
+    b) review_base ;;
+    p) review_pr "$pr_url" ;;
+    w) run -w ;;
+    c) run ;;
+    q) exit 0 ;;
+  esac
+done

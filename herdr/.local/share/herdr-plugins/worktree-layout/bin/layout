@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Lay out a workspace as
+#
+#   agent (top-left)    | review (top-right)
+#   shell (bottom, full width)
+#
+#   layout event   from a worktree.created / worktree.opened hook
+#   layout apply   the invoking workspace (plugin action)
+#
+# Only a workspace whose sole pane is untouched is laid out: re-runs, reopened
+# workspaces that kept their panes, and workspaces you arranged yourself are left
+# alone. The agent kind comes from config.toml in the plugin config dir. Pane
+# labels (agent, review, shell) are set last; bin/layout-wait treats them as the
+# signal that the layout is finished.
+set -euo pipefail
+
+herdr=${HERDR_BIN_PATH:-herdr}
+root=${HERDR_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}
+state=${HERDR_PLUGIN_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/herdr/plugins/worktree-layout}
+mkdir -p "$state"
+log="$state/layout.log"
+
+note() { printf '%s %s\n' "$(date '+%F %T')" "$*" >>"$log"; }
+fail() {
+  note "error: $*"
+  "$herdr" notification show "worktree layout" --body "$*" >/dev/null 2>&1 || true
+  exit 1
+}
+
+case "${1:-}" in
+  event)
+    event=${HERDR_PLUGIN_EVENT_JSON:-'{}'}
+    # worktree.opened on a workspace that was already open: nothing new to lay out.
+    if jq -e '[.. | objects | .already_open? | select(. == true)] | length > 0' <<<"$event" >/dev/null; then
+      exit 0
+    fi
+    ws=$(jq -r '[.. | objects | .workspace_id? | strings] | first // empty' <<<"$event")
+    ;;
+  apply)
+    ws=${HERDR_WORKSPACE_ID:-$(jq -r '.workspace_id // empty' <<<"${HERDR_PLUGIN_CONTEXT_JSON:-'{}'}")}
+    ;;
+  *) echo "usage: layout event|apply" >&2; exit 2 ;;
+esac
+[ -n "$ws" ] || fail "no workspace id in ${HERDR_PLUGIN_EVENT:-action} context"
+
+# worktree.create can be followed by worktree.opened for the same workspace.
+exec 9>"$state/$ws.lock"
+flock -n 9 || exit 0
+
+panes=$("$herdr" pane list --workspace "$ws") || fail "cannot list panes of $ws"
+if [ "$(jq '.result.panes | length' <<<"$panes")" -ne 1 ]; then
+  [ "$1" = apply ] && "$herdr" notification show "worktree layout" \
+    --body "$ws already has more than one pane; close the extras first" >/dev/null 2>&1
+  exit 0
+fi
+agent_pane=$(jq -r '.result.panes[0].pane_id' <<<"$panes")
+cwd=$(jq -r '.result.panes[0].cwd' <<<"$panes")
+
+config="${HERDR_PLUGIN_CONFIG_DIR:-$HOME/.config/herdr/plugins/config/worktree-layout}/config.toml"
+agent=$(python3 -c 'import sys, tomllib; print(tomllib.load(open(sys.argv[1], "rb")).get("agent", ""))' "$config" 2>/dev/null || echo omp)
+
+# Start the agent once the pane's shell will take it. A shell that is still
+# starting up can be refused as agent_pane_busy, so retry that for a while; any
+# other error, or running out of time, is reported with herdr's own message.
+# Agent names must be lowercase, and workspace ids aren't ("wW"), so each capital
+# becomes _ plus its lowercase letter: wW -> agent-w_w, distinct from ww.
+agent_name=agent-
+for ((i = 0; i < ${#ws}; i++)); do
+  c=${ws:i:1}
+  if [[ $c == [[:upper:]] ]]; then agent_name+="_${c,,}"; else agent_name+=$c; fi
+done
+start_agent() {
+  local deadline=$(( $(date +%s) + 20 )) err
+  while :; do
+    err=$("$herdr" agent start "$agent_name" --kind "$agent" --pane "$agent_pane" --timeout 60000 2>&1 >/dev/null) &&
+      return 0
+    case $err in
+      *agent_pane_busy*) [ "$(date +%s)" -lt "$deadline" ] && { sleep 0.3; continue; } ;;
+    esac
+    note "error: $agent did not start in $agent_pane: $err"
+    "$herdr" notification show "worktree layout: $agent did not start" --body "$agent_pane: $err" >/dev/null 2>&1 || true
+    return 1
+  done
+}
+
+split() { # split <pane> <direction> <ratio> [--env K=V]
+  "$herdr" pane split "$1" --direction "$2" --ratio "$3" --cwd "$cwd" --no-focus "${@:4}" |
+    jq -r .result.pane.pane_id
+}
+shell_pane=$(split "$agent_pane" down 0.7) || fail "cannot split $agent_pane"
+# AGENT_PICKR_TARGET: tuicr-send from the review pane defaults to this agent.
+review_pane=$(split "$agent_pane" right 0.5 --env "AGENT_PICKR_TARGET=$agent_pane") ||
+  fail "cannot split $agent_pane"
+
+# Typed into a shell that may still be starting; the tty holds it until fish reads.
+"$herdr" pane run "$review_pane" "$(printf '%q' "$root/bin/review-pane")" >/dev/null
+
+[ -z "$agent" ] || start_agent || true
+
+"$herdr" pane rename "$agent_pane" agent >/dev/null
+"$herdr" pane rename "$review_pane" review >/dev/null
+"$herdr" pane rename "$shell_pane" shell >/dev/null
+note "laid out $ws ($cwd): agent=$agent_pane review=$review_pane shell=$shell_pane"

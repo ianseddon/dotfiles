@@ -1,0 +1,22 @@
+id = "tuicr-send"
+name = "tuicr-send"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Send the focused tuicr pane's review comments to an agent chosen with agent-pickr."
+# Reads the default target from /proc/<tuicr pid>/environ.
+platforms = ["linux"]
+
+# Invoke with the tuicr pane focused; the popup has no pane id of its own.
+[[actions]]
+id = "send"
+title = "Send tuicr review to an agent"
+contexts = ["pane"]
+command = ["sh", "-c", "exec \"$HERDR_BIN_PATH\" plugin pane open --plugin tuicr-send --entrypoint send --env \"TUICR_SEND_PANE=$HERDR_PANE_ID\""]
+
+[[panes]]
+id = "send"
+title = "tuicr-send"
+placement = "popup"
+width = "90%"
+height = "80%"
+command = ["bash", "bin/tuicr-send"]

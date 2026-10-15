@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# Popup entrypoint: send the review comments of the tuicr session running in
+# $TUICR_SEND_PANE to an agent chosen with agent-pickr's agent-pick.
+#
+# The default target is AGENT_PICKR_TARGET from the tuicr process environment
+# (review-worktree sets it to the agent beside tuicr); otherwise pick any agent.
+# enter submits the comments as a prompt; ctrl-y pastes them into the agent's
+# input without submitting. Comments already sent to that agent are skipped
+# until their text changes; state lives in $HERDR_PLUGIN_STATE_DIR/sent.
+set -euo pipefail
+
+herdr=${HERDR_BIN_PATH:-herdr}
+pick="$HERDR_PLUGIN_ROOT/../agent-pickr/bin/agent-pick"
+state_dir="${HERDR_PLUGIN_STATE_DIR:?run as the tuicr-send popup}/sent"
+
+fail() {
+  printf 'tuicr-send: %s\n' "$*" >&2
+  read -rsn1 -p 'press any key to close' || true
+  exit 1
+}
+
+[ -x "$pick" ] || fail "agent-pickr is not installed next to tuicr-send ($pick)"
+src=${TUICR_SEND_PANE:-}
+[ -n "$src" ] || fail "focus a pane running tuicr, then run the action"
+
+# tuicr's active-session registry maps the TUI's pid to its session slug.
+pid=$("$herdr" pane process-info --pane "$src" | jq -r '
+  .result.process_info.foreground_processes[]
+  | select((.argv[0] // "") | test("(^|/)tuicr$")) | .pid' | head -n1)
+[ -n "$pid" ] || fail "pane $src is not running tuicr"
+active="${XDG_DATA_HOME:-$HOME/.local/share}/tuicr/reviews/active_sessions.json"
+slug=$(jq -r --argjson pid "$pid" '.sessions[] | select(.pid == $pid) | .slug' "$active" 2>/dev/null | head -n1)
+[ -n "$slug" ] || fail "tuicr (pid $pid) has no active session in $active"
+default=$(tr '\0' '\n' <"/proc/$pid/environ" | sed -n 's/^AGENT_PICKR_TARGET=//p' | head -n1)
+
+comments=$(tuicr review comments --session "$slug") || fail "cannot read comments for $slug"
+total=$(jq length <<<"$comments")
+[ "$total" -gt 0 ] || fail "no saved comments in $slug (save with :w in tuicr)"
+
+choice=$("$pick" --default "$default" --expect ctrl-y --title "Send $total comment(s)" \
+  --header "$slug" --footer "enter send · ctrl-y paste · esc cancel") || exit 0
+key=$(sed -n 1p <<<"$choice")
+target=$(sed -n 2p <<<"$choice")
+agent=$("$herdr" agent get "$target" | jq -c '.result.agent | {agent, terminal_id}')
+
+# Dedupe per tuicr session and agent terminal: an id with unchanged text was sent.
+mkdir -p "$state_dir"
+sent_file="$state_dir/$(printf '%s|%s' "$slug" "$(jq -r .terminal_id <<<"$agent")" | sha1sum | cut -c1-16).json"
+[ -f "$sent_file" ] || echo '[]' >"$sent_file"
+new=$(jq --slurpfile sent "$sent_file" '
+  [.[] | . as $c | select($sent[0] | any(.id == $c.id and .content == $c.content) | not)]' <<<"$comments")
+count=$(jq length <<<"$new")
+if [ "$count" -eq 0 ]; then
+  read -rn1 -p "All $total comment(s) were already sent to $target. Send them again? [y/N] " again
+  echo
+  [ "$again" = y ] || exit 0
+  new=$comments count=$total
+fi
+
+text=$(jq -r --arg slug "$slug" '
+  "Review comments from tuicr (session \($slug)):",
+  "",
+  (to_entries[]
+   | .value as $c
+   | "\(.key + 1). \($c.location)"
+     + (if ($c.comment_type // "none") != "none" then " [\($c.comment_type)]" else "" end)
+     + " (\($c.author // "user"))",
+     $c.content, ""),
+  "Respond to each comment. Full session: `tuicr review comments --session '"'"'\($slug)'"'"'`"' <<<"$new")
+
+if [ "$key" = ctrl-y ]; then
+  # send-text writes raw bytes, so frame the paste and strip ESC from the payload.
+  "$herdr" pane send-text "$target" $'\e[200~'"${text//$'\e'/}"$'\e[201~' >/dev/null ||
+    fail "could not paste into $target"
+  "$herdr" agent focus "$target" >/dev/null || true
+  verb=pasted
+else
+  "$herdr" agent prompt "$target" "$text" >/dev/null ||
+    fail "$target did not accept the prompt (blocked, or not at its input)"
+  verb=sent
+fi
+
+jq --argjson new "$new" '. + [$new[] | {id, content}]' "$sent_file" >"$sent_file.tmp" && mv "$sent_file.tmp" "$sent_file"
+"$herdr" notification show "tuicr-send" \
+  --body "$verb $count comment(s) to $(jq -r .agent <<<"$agent") ($target)" >/dev/null 2>&1 || true

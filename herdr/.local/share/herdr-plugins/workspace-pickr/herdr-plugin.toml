@@ -1,0 +1,20 @@
+id = "workspace-pickr"
+name = "workspace-pickr"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Pick a project with fzf: open workspaces, then zoxide-ranked git repos and their linked worktrees. Enter focuses or opens it; ctrl-n creates a worktree."
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "open"
+title = "Open workspace"
+contexts = ["global", "workspace", "pane"]
+command = ["sh", "-c", "exec \"$HERDR_BIN_PATH\" plugin pane open --plugin workspace-pickr --entrypoint open"]
+
+[[panes]]
+id = "open"
+title = "workspace-pickr"
+placement = "popup"
+width = "90%"
+height = "80%"
+command = ["bash", "bin/workspace-pick"]

@@ -1,0 +1,25 @@
+id = "worktree-layout"
+name = "worktree-layout"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Lay out every new git worktree workspace: agent top-left, review menu top-right, shell across the bottom."
+# bin/layout serialises runs per workspace with flock (util-linux).
+platforms = ["linux"]
+
+# Every worktree workspace herdr creates or reopens gets the layout, whoever
+# created it (herdr's new-worktree dialog, scripts, other plugins). Scripts that
+# need the panes wait for them with bin/layout-wait instead of building their own.
+[[events]]
+on = "worktree.created"
+command = ["bash", "bin/layout", "event"]
+
+[[events]]
+on = "worktree.opened"
+command = ["bash", "bin/layout", "event"]
+
+# The same layout on demand, for workspaces that weren't created as worktrees.
+[[actions]]
+id = "apply"
+title = "Apply worktree layout"
+contexts = ["workspace", "pane"]
+command = ["bash", "bin/layout", "apply"]

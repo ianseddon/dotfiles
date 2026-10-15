@@ -46,10 +46,11 @@ fish_add_path -g $HOME/.lando/bin # lando
 # Enable vi key bindings
 fish_vi_key_bindings
 
-# init
-starship init fish | source
-# replaced with icezyclon/zoxide.fish plugin
-#zoxide init fish | source 
+# zoxide init comes from the icezyclon/zoxide.fish plugin
+
+# No [I]/[N] vi-mode marker before the prompt (starship's init used to hide it)
+function fish_mode_prompt
+end
 
 function fish_prompt
     set -l last_status $status
@@ -68,10 +69,12 @@ function fish_prompt
         set status_indicator (set_color red)"✗ "
     end
 
+    # Kanagawa (kanagawa.nvim): waveAqua2 directory, carpYellow branch, springGreen
+    # prompt; red is ANSI red, which Ghostty's Kanagawa Wave palette draws as autumnRed.
     printf '%s%s%s%s%s ' \
-        (set_color 83c092)$pwd_info \
-        (set_color dbbc7f)$git_info \
+        (set_color 7AA89F)$pwd_info \
+        (set_color E6C384)$git_info \
         (set_color normal) \
         $status_indicator \
-        (set_color a7c080)'❯'(set_color normal)
+        (set_color 98BB6C)'❯'(set_color normal)
 end

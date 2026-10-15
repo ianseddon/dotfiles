@@ -26,7 +26,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		bmap("n", "<leader>cr", vim.lsp.buf.rename, "Rename")
 		bmap("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
 		bmap("n", "K", function() vim.lsp.buf.hover { silent = true } end, "Hover")
-		bmap("n", "<C-k>", function() vim.lsp.buf.signature_help { silent = true, focusable = false } end, "Signature help")
+		-- Insert mode only: normal-mode <C-k> is pane navigation (plugins/herdr-navigation.lua).
 		bmap("i", "<C-k>", function() vim.lsp.buf.signature_help { silent = true, focusable = false } end, "Signature help")
 
 		if client:supports_method("textDocument/foldingRange") then

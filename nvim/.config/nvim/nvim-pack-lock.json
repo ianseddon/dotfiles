@@ -116,6 +116,10 @@
       "rev": "7ef4d6dccb78ee71e552bbd866176762ad328afa",
       "src": "https://github.com/nvim-telescope/telescope.nvim"
     },
+    "vim-herdr-navigation": {
+      "rev": "742db891e7d1f9a550b16c01dc8a6763f2b1493a",
+      "src": "https://github.com/paulbkim-dev/vim-herdr-navigation"
+    },
     "vim-wakatime": {
       "rev": "d7973b157a632d1edeff01818f18d67e584eeaff",
       "src": "https://github.com/wakatime/vim-wakatime"
@@ -123,10 +127,6 @@
     "which-key.nvim": {
       "rev": "3aab2147e74890957785941f0c1ad87d0a44c15a",
       "src": "https://github.com/folke/which-key.nvim"
-    },
-    "zellij-nav.nvim": {
-      "rev": "91cc2a642d8927ebde50ced5bf71ba470a0fc116",
-      "src": "https://github.com/swaits/zellij-nav.nvim"
     }
   }
 }

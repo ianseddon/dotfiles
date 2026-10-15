@@ -21,7 +21,7 @@ vim.pack.add({
 	gh("folke/which-key.nvim"),
 	gh("stevearc/conform.nvim"),
 	gh("wakatime/vim-wakatime"),
-	gh("swaits/zellij-nav.nvim"),
+	gh("paulbkim-dev/vim-herdr-navigation"),
 	gh("nickjvandyke/opencode.nvim"),
 	gh("saghen/blink.cmp"),
 	gh("rafamadriz/friendly-snippets"),
@@ -51,5 +51,5 @@ require("plugins.fzf-lua")
 require("plugins.blink")
 require("plugins.neotest")
 require("plugins.opencode")
-require("plugins.zellij")
+require("plugins.herdr-navigation")
 require("plugins.lsp")

@@ -2,7 +2,9 @@
   description = "Ian's Nix-managed development machines";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-  inputs.herdr.url = "github:herdrdev/herdr/v0.9.3";
+  # Same release as the desktop, so the M75q server runs the plugins and config
+  # the desktop client does.
+  inputs.herdr.url = "github:herdrdev/herdr/v0.9.4";
   inputs.herdr.inputs.nixpkgs.follows = "nixpkgs";
   inputs.omp.url = "github:can1357/oh-my-pi/v18.8.0";
   inputs.omp.inputs.nixpkgs.follows = "nixpkgs";

@@ -582,9 +582,10 @@ nix --extra-experimental-features 'nix-command flakes' profile add path:./nix#m7
 export PATH="$HOME/.nix-profile/bin:$PATH"
 stow --target="$HOME" nix
 mkdir -p ~/.config/worktrunk && stow --target="$HOME" worktrunk
+mkdir -p ~/.config/herdr && stow --no-folding --target="$HOME" herdr
 sudo loginctl enable-linger "$USER"
 systemctl --user daemon-reload
-systemctl --user enable --now docker.service
+systemctl --user enable --now docker.service herdr.service
 
 readlink "$HOME/.nix-profile"
 nix profile list

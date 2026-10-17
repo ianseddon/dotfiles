@@ -16,6 +16,10 @@ with pkgs; [
 
   fish
   herdr.packages.${system}.default
+  # The herdr plugins' pickers (herdr/.local/share/herdr-plugins, herdr-worktrunk)
+  # are fzf; workspace-pickr also lists zoxide's top repos.
+  fzf
+  zoxide
   zellij
   neovim
   tuicr

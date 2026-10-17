@@ -10,7 +10,7 @@ For a named configuration-file block, create or edit that file with `nano` and c
 
 | Component | Choice |
 | --- | --- |
-| Hostname / account | `m75q-dev` / `ian` |
+| Hostname / account | `m75q` / `ian` |
 | Firmware / boot | UEFI, systemd-boot, signed unified kernel images (UKIs), Secure Boot |
 | Kernel | `linux-lts`, AMD microcode |
 | Storage | GPT; 2 GiB FAT32 EFI system partition at `/efi`; remainder LUKS2 with ext4 at `/` |
@@ -149,7 +149,7 @@ Uncomment `en_US.UTF-8 UTF-8`, save, then:
 locale-gen
 printf 'LANG=en_US.UTF-8\n' > /etc/locale.conf
 printf 'KEYMAP=us\n' > /etc/vconsole.conf
-printf 'm75q-dev\n' > /etc/hostname
+printf 'm75q\n' > /etc/hostname
 
 passwd
 useradd --create-home --groups wheel --shell /bin/bash ian
@@ -531,7 +531,7 @@ Open the displayed authentication URL on the existing workstation and join the i
 
 In the [Tailscale admin console](https://login.tailscale.com/admin/machines):
 
-- Confirm this is the intended `m75q-dev` device and account.
+- Confirm this is the intended `m75q` device and account.
 - Check that existing network grants allow your workstation to reach this host's port 22, and that the tailnet's **SSH policy** permits your identity to log in as local user `ian`. Do not broaden all members' access or enable root SSH just to pass the test.
 - Check-mode SSH may require browser re-authentication. That is user-login authentication, not disk unlocking; it does not stop the machine booting.
 - Review **device key expiry**. If work policy permits, disable expiry for this always-on node; otherwise document and schedule re-authentication before expiry. This is separate from any enrollment auth-key expiry. Disabling expiry makes explicit device revocation important.
@@ -539,8 +539,8 @@ In the [Tailscale admin console](https://login.tailscale.com/admin/machines):
 **On the existing workstation:**
 
 ```bash
-tailscale ping m75q-dev
-tailscale ssh ian@m75q-dev
+tailscale ping m75q
+tailscale ssh ian@m75q
 ```
 
 Use the host's Tailscale IP if name resolution is not yet working. Inside the SSH session, check `hostname`, `whoami`, and `sudo -v`. Leave the local console available until a remote reboot also succeeds.
@@ -559,15 +559,15 @@ While these changes remain local/uncommitted, transfer only the reviewed configu
 
 ```bash
 tar -C ~/dotfiles-worktrees/nix-dev-env \
-  -czf /tmp/m75q-dev-env.tar.gz nix README.md M75Q-ARCH-INSTALL.md
-scp /tmp/m75q-dev-env.tar.gz ian@m75q-dev:/tmp/
+  -czf /tmp/m75q-env.tar.gz nix README.md M75Q-ARCH-INSTALL.md
+scp /tmp/m75q-env.tar.gz ian@m75q:/tmp/
 ```
 
 **On the M75q:**
 
 ```bash
 mkdir -p ~/dotfiles
-tar -xzf /tmp/m75q-dev-env.tar.gz -C ~/dotfiles
+tar -xzf /tmp/m75q-env.tar.gz -C ~/dotfiles
 cd ~/dotfiles
 ```
 

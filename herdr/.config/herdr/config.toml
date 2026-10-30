@@ -105,19 +105,26 @@ type = "plugin_action"
 command = "agent-pickr.jump"
 description = "jump to agent"
 
+# On-demand agent-authored reviews through jhochenbaum/herdr-hunk-diff.
+# review:commit is available from the command palette; prefix+shift+c already
+# creates a workspace here.
 [[keys.command]]
-key = "prefix+t"
+key = "prefix+shift+h"
 type = "plugin_action"
-command = "tuicr-send.send"
-description = "send tuicr review to agent"
+command = "jhochenbaum.hunkdiff.review"
+description = "hunk: review changes"
 
-# New worktree workspaces are laid out by a hook; this applies the same layout
-# to any other single-pane workspace.
 [[keys.command]]
-key = "prefix+shift+l"
+key = "prefix+shift+s"
 type = "plugin_action"
-command = "worktree-layout.apply"
-description = "lay out workspace: agent, review, shell"
+command = "jhochenbaum.hunkdiff.send-review"
+description = "hunk: send review to agent"
+
+[[keys.command]]
+key = "prefix+shift+a"
+type = "plugin_action"
+command = "jhochenbaum.hunkdiff.review:staged"
+description = "hunk: review staged changes"
 
 # prefix+w stays herdr's own workspace picker (open workspaces only)
 [[keys.command]]

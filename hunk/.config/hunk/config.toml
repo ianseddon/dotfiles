@@ -1,0 +1,43 @@
+# Match neovim's Kanagawa theme and terminal background.
+theme = "kanagawa-wave"
+transparent_background = true
+tab_width = 2
+
+# Follow agent edits and show their annotations immediately.
+watch = true
+agent_notes = true
+
+# Review tracked changes only; specs are temporary repo files cleaned before merge.
+exclude_untracked = true
+
+# Keep view changes session-local.
+prompt_save_view_preferences = false
+
+# Always-on vim-navigation extension commands.
+cursor_line = "row"
+
+[keybindings]
+# Match neovim's buffer cycling while retaining Hunk's defaults.
+"hunk.review.previousFile" = [",", "H"]
+"hunk.review.nextFile" = [".", "L"]
+
+"vim-navigation.move-down" = "j"
+"vim-navigation.move-up" = "k"
+"vim-navigation.previous-hunk" = "["
+"vim-navigation.next-hunk" = "]"
+"vim-navigation.jump-bottom" = "G"
+"vim-navigation.prefix-g" = "g"
+"vim-navigation.prefix-z" = "z"
+"vim-navigation.half-page-down" = "ctrl+d"
+"vim-navigation.half-page-up" = "ctrl+u"
+"vim-navigation.digit-0" = "0"
+"vim-navigation.digit-1" = "1"
+"vim-navigation.digit-2" = "2"
+"vim-navigation.digit-3" = "3"
+"vim-navigation.digit-4" = "4"
+"vim-navigation.digit-5" = "5"
+"vim-navigation.digit-6" = "6"
+"vim-navigation.digit-7" = "7"
+"vim-navigation.digit-8" = "8"
+"vim-navigation.digit-9" = "9"
+"vim-navigation.command-line" = ":"

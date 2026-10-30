@@ -1,5 +1,7 @@
 # herdr workspaces: navigation, layout, status
 
+> Trial update: `worktree-layout` and its custom PR-agent flow were removed and remain available in Git history. Agent-authored reviews now open on demand with `jhochenbaum/herdr-hunk-diff`; see [pr-review.md](pr-review.md). Layout-specific sections below are retained as historical reference.
+
 Snapshot: 2026-10-14 (herdr 0.9.4, tuicr 0.27.0). How herdr is set up for day-to-day work, beyond the tmux-style keys in `herdr/.config/herdr/config.toml`. PR review and agent hand-offs are in [pr-review.md](pr-review.md); why herdr at all is in [multiplexer-agent-review-dotfiles.md](multiplexer-agent-review-dotfiles.md).
 
 ## Keys
@@ -9,9 +11,7 @@ Prefix is `ctrl+space`.
 | Key | Does |
 |---|---|
 | `ctrl+h/j/k/l` | Move to the pane left/down/up/right; inside nvim, move between splits and cross into herdr at an edge |
-| `prefix+shift+l` | Apply the worktree layout to the current single-pane workspace |
 | `prefix+a` | Pick an agent (fzf, with its recent output) and jump to it |
-| `prefix+t` | Send the focused tuicr pane's comments to an agent ([pr-review.md](pr-review.md)) |
 | `prefix+f` | Find a project: focus an open workspace, open a worktree, or open a repo ([below](#workspace-picker)) |
 | `prefix+shift+g` | Switch to or create a worktree of the current repo, through worktrunk ([below](#worktrees-worktrunk)) |
 | `prefix+ctrl+g` | Remove a worktree of the current repo |

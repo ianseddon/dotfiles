@@ -18,23 +18,15 @@ prSections:
   - title: Mergeable (approved)
     filters: repo:EBSCO-Nexus/workforce-monorepo is:open draft:false status:success review:approved -label:robot-says-merge
 
-# `T` and `S` are unbound by default; `t` shadows gh-dash's smart-filtering toggle
-# (v4.26). tuicr fetches the PR through `gh`, so `t` needs no local clone or
-# repoPaths entry; `:submit` inside tuicr posts the review back to GitHub. `T` is
-# the agent-assisted review and `S` sends your own PR to an agent to merge the
-# base, address review comments, or fix CI (docs/pr-review.md): run gh-dash
-# inside herdr with a checkout of the PR's repo open in some herdr workspace.
+# `t` shadows gh-dash's smart-filtering toggle (v4.26). tuicr fetches the PR
+# through `gh`, so `t` needs no local clone or repoPaths entry; `:submit` inside
+# tuicr posts the review back to GitHub. Agent-authored changes use Hunk's
+# on-demand Herdr actions rather than the archived custom PR worktree flow.
 keybindings:
   prs:
     - key: t
       name: review in tuicr
       command: tuicr pr https://github.com/{{.RepoName}}/pull/{{.PrNumber}}
-    - key: T
-      name: review with agent (herdr worktree)
-      command: $HOME/.config/herdr/plugins/config/pickr/review-worktree https://github.com/{{.RepoName}}/pull/{{.PrNumber}}
-    - key: S
-      name: send to agent (conflicts, review comments, CI)
-      command: $HOME/.config/herdr/plugins/config/pickr/pr-agent https://github.com/{{.RepoName}}/pull/{{.PrNumber}}
     # gh-dash has no reviewer action; `E` is unbound in v4.26.1's keymap.
     - key: E
       name: request reviewers

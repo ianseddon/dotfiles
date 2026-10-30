@@ -9,7 +9,7 @@
 # worktrunk's worktree-path, and runs the repo's worktrunk hooks: it asks before
 # running a project's hook commands the first time and whenever they change,
 # including changes a PR makes to .config/wt.toml. Inside herdr the worktree
-# opens with `herdr worktree open`, so the worktree-layout hook lays it out;
+# opens with `herdr worktree open`; reviews use on-demand Hunk actions;
 # outside herdr the path is printed. A repo missing at <repo-path> (gh-dash's
 # repoPaths) can be cloned there first.
 set -euo pipefail

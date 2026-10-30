@@ -1,6 +1,6 @@
 # herdr-worktrunk (devashish2203/herdr-worktrunk). Worktrees open as native herdr
-# worktree workspaces (open_mode default), so the worktree-layout hook lays them
-# out. Where worktrees go is worktrunk's own setting (worktrunk/.config/worktrunk).
+# worktree workspaces (open_mode default). Agent-authored reviews open on demand
+# with Hunk. Where worktrees go is worktrunk's own setting (worktrunk/.config/worktrunk).
 picker_placement = "popup"
 popup_width = "90%"
 popup_height = "80%"

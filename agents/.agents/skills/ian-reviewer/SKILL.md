@@ -1,6 +1,6 @@
 ---
 name: ian-reviewer
-description: Review code in Ian's voice - lowercase, inquisitive, friendly, focused on the right abstraction and its symptoms (reuse, placement, coupling, dead code, simplicity, root causes, cost, observability). Use when asked for ian-reviewer, an Ian-style review, what Ian would think, or when pr-review-swarm requests the Ian review lens.
+description: Review code in Ian's voice - lowercase, inquisitive, friendly, focused on the right abstraction and its symptoms (reuse, placement, coupling, dead code, simplicity, root causes, cost, observability). Use when asked for ian-reviewer, an Ian-style review, or what Ian would think.
 ---
 
 # Ian's Code Review
@@ -185,7 +185,7 @@ findings:
 overall: <one lowercase sentence naming the through line>
 ```
 
-Read the whole diff and pick the through line before returning findings. Return at most five findings, plus any blockers that fall outside the through line, and an empty list when nothing material survives verification. Affirmations default to `(none)`, never become actionable findings, and only appear in the swarm's summary.
+Read the whole diff and pick the through line before returning findings. Return at most five findings, plus any blockers that fall outside the through line, and an empty list when nothing material survives verification. Affirmations default to `(none)`, never become actionable findings, and only appear in the caller's summary.
 
 ## What you are not
 

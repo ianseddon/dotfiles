@@ -7,4 +7,4 @@ clear_after_send = false
 
 [hunk]
 # Use the same Hunk for the plugin, extensions, session daemon, and agent CLI.
-bin = "/home/ian/.bun/bin/hunk"
+bin = "/home/ian/.nix-profile/bin/hunk"

@@ -1,2 +1,4 @@
 # Documentation stays in the checkout, not $HOME.
 README.*
+# Extensions are copied into ~/.config/hunk/extensions (see README.md), not linked.
+^/extensions

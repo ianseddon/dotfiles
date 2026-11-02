@@ -110,7 +110,7 @@ pi, Claude Code, and codex all run from the Nix profile; their self-updaters don
 - **Instructions:** `~/AGENTS.md` (from `agents/AGENTS.md`).
 - **Skills:** `~/.agents/skills` is `agents/.agents/skills`. Skills a Nix package ships (herdr, Hunk, worktrunk, gh-stack) are links into `~/.nix-profile/share/skills`, so they move with the package; the rest are copies, and `agents/.agents/.skill-lock.json` records where they came from.
 - **pi:** `pi/.pi/agent/settings.json` holds the shared settings and packages (`pi update --extensions` installs them). `pi-web-access` reads `web-search.json` from `~/.config/pi` when `XDG_CONFIG_HOME` is set and from `~/.pi/agent` when it isn't, so the file is linked into both. It routes `web_search` through Kagi (v1 API, funded balance), then keyless Exa, and reads `$KAGI_API_KEY` from the environment.
-- **Claude Code:** `claude/.claude/settings.json`, including the plugin marketplaces it installs from.
+- **Claude Code:** `claude/.claude/settings.json`, including the plugin marketplaces it installs from. Auto memory is off (`autoMemoryEnabled: false`), so durable notes belong in this repository or a project's `AGENTS.md`, not in `~/.claude/projects/*/memory`.
 - **codex:** its `config.toml` is machine state (project trust, hook hashes), so it isn't tracked; add its plugins with `codex plugin add`.
 
 ### Nexus-only skills

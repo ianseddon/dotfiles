@@ -109,7 +109,7 @@ pi, Claude Code, and codex all run from the Nix profile; their self-updaters don
 
 - **Instructions:** `~/AGENTS.md` (from `agents/AGENTS.md`).
 - **Skills:** `~/.agents/skills` is `agents/.agents/skills`. Skills a Nix package ships (herdr, Hunk, worktrunk, gh-stack) are links into `~/.nix-profile/share/skills`, so they move with the package; the rest are copies, and `agents/.agents/.skill-lock.json` records where they came from.
-- **pi:** `pi/.pi/agent/settings.json` holds the shared settings and packages (`pi update --extensions` installs them). `pi-web-access` reads `web-search.json` from `~/.config/pi` when `XDG_CONFIG_HOME` is set and from `~/.pi/agent` when it isn't, so the file is linked into both. It routes `web_search` through Kagi (v1 API, funded balance), then Gemini, then keyless Exa, and reads `$KAGI_API_KEY` and `$GEMINI_API_KEY` from the environment.
+- **pi:** `pi/.pi/agent/settings.json` holds the shared settings and packages (`pi update --extensions` installs them). `pi-web-access` reads `web-search.json` from `~/.config/pi` when `XDG_CONFIG_HOME` is set and from `~/.pi/agent` when it isn't, so the file is linked into both. It routes `web_search` through Kagi (v1 API, funded balance), then keyless Exa, and reads `$KAGI_API_KEY` from the environment.
 - **Claude Code:** `claude/.claude/settings.json`, including the plugin marketplaces it installs from.
 - **codex:** its `config.toml` is machine state (project trust, hook hashes), so it isn't tracked; add its plugins with `codex plugin add`.
 
@@ -180,7 +180,15 @@ Open `https://m75q.hawk-monster.ts.net` on the phone, install it, then **Setting
 
 ## Secrets
 
-None are in this repository. Today they're environment variables (`fish/.config/fish/secrets.fish` on the desktop, untracked and optional) and each tool's own login. The AWS CLI's configuration stays out too, since `~/.aws/config` names account IDs and SSO URLs: copy it between machines (mode 0600) and sign in on the headless host with a device code:
+None are in this repository. The agents' API keys (`KAGI_API_KEY`, `OPENCODE_API_KEY`) live in the `agents` project of the self-hosted [Infisical](https://infisical.ians.cloud), environment `prod`. Each machine reads it as its own Universal Auth machine identity (`desktop`, `m75q`) with the project's Viewer role, so either can be revoked alone.
+
+```bash
+agent-secrets-login    # once per machine: project ID, client ID, client secret
+```
+
+That writes `~/.config/infisical/agents.env` (mode 0600), the machine's one local secret. `with-agent-secrets <command>` signs in with it, caches Infisical's token on tmpfs for an hour, and starts the command with the project's secrets added to its environment; Infisical's token itself never reaches the command. The `pi` fish function runs pi that way. To add a key, add it to the project; nothing here changes.
+
+OAuth logins stay with each tool on each machine (pi's `/login`, `claude`, `codex login`), because the tools refresh and rewrite those tokens themselves. The AWS CLI's configuration stays out too, since `~/.aws/config` names account IDs and SSO URLs: copy it between machines (mode 0600) and sign in on the headless host with a device code:
 
 ```bash
 aws sso login --use-device-code --sso-session <name>

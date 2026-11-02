@@ -11,15 +11,15 @@ function with-agent-secrets --description 'Run a command with the Infisical agen
     end
 
     set -l settings (string match -r '^INFISICAL_[A-Z_]+=.*' <$conf)
-    set -lx INFISICAL_DOMAIN https://infisical.ians.cloud
-    set -lx INFISICAL_DISABLE_UPDATE_CHECK true
+    # For the infisical calls only, so none of it reaches the command.
+    set -l infisical env INFISICAL_DOMAIN=https://infisical.ians.cloud INFISICAL_DISABLE_UPDATE_CHECK=true
     set -l project (string replace -rf '^INFISICAL_PROJECT_ID=' '' -- $settings)
 
     # Universal Auth access tokens last far longer than an hour; refreshing
     # hourly keeps a revoked identity from working for long.
     set -l cache (_agent_secrets_token_file)
     if not test -s $cache; or test (math (date +%s) - (path mtime $cache)) -gt 3600
-        set -l token (env (string match -r '^INFISICAL_UNIVERSAL_AUTH_.*' -- $settings) \
+        set -l token ($infisical (string match -r '^INFISICAL_UNIVERSAL_AUTH_.*' -- $settings) \
             infisical login --method=universal-auth --plain --silent)
         or begin
             echo "with-agent-secrets: Infisical login failed" >&2
@@ -29,7 +29,7 @@ function with-agent-secrets --description 'Run a command with the Infisical agen
         printf '%s\n' $token >$cache
     end
 
-    set -l secrets (env INFISICAL_TOKEN=(cat $cache) \
+    set -l secrets ($infisical INFISICAL_TOKEN=(cat $cache) \
         infisical export --projectId=$project --env=prod --format=json --silent \
         | jq -r '.[] | "\(.key)=\(.value)"')
     or begin

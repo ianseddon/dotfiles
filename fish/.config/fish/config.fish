@@ -1,5 +1,3 @@
-# API keys, kept out of the repo; machines without one get them elsewhere.
-test -f ~/.config/fish/secrets.fish; and source ~/.config/fish/secrets.fish
 source ~/.config/fish/alias.fish
 
 # Disable greeting

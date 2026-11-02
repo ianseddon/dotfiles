@@ -19,7 +19,7 @@ For a named configuration-file block, create or edit that file with `nano` and c
 | Memory | zram the size of RAM, then a 16 GiB NVMe swapfile; earlyoom kills dev processes before the kernel OOM killer; no hibernation |
 | Network | Wired Ethernet, DHCP, systemd-networkd and systemd-resolved |
 | Remote access | Tailscale SSH; no public SSH port or enabled OpenSSH server |
-| Login shell | Arch's `/bin/bash`; Nix Fish is optional, launched after login |
+| Login shell | Arch's `/bin/fish` (pacman), so login never depends on a Nix generation |
 | Locale / time | `en_US.UTF-8`, US console keymap, `America/Montreal` |
 | Development | The adjacent `nix/` flake, including rootless Docker as a user service; no desktop, Home Manager, or copied agent state |
 
@@ -124,7 +124,7 @@ pacstrap -K /mnt \
   mkinitcpio cryptsetup e2fsprogs dosfstools \
   sudo nano man-db man-pages \
   systemd-ukify sbctl tpm2-tss openssl jq efitools \
-  zram-generator earlyoom openssh git tailscale nix
+  zram-generator earlyoom openssh git tailscale nix fish stow
 
 genfstab -U /mnt > /mnt/etc/fstab
 cat /mnt/etc/fstab
@@ -152,7 +152,7 @@ printf 'KEYMAP=us\n' > /etc/vconsole.conf
 printf 'm75q\n' > /etc/hostname
 
 passwd
-useradd --create-home --groups wheel --shell /bin/bash ian
+useradd --create-home --groups wheel --shell /bin/fish ian
 passwd ian
 EDITOR=nano visudo -f /etc/sudoers.d/10-wheel
 ```
@@ -170,7 +170,7 @@ chmod 0440 /etc/sudoers.d/10-wheel
 visudo -c
 ```
 
-Do not disable sudo password checks. Keep Bash as the login shell: recovery and SSH login must not depend on a Nix profile generation. Do not run the desktop `install.sh` or its `chsh` instructions on this host.
+Do not disable sudo password checks. Keep the login shell a pacman package (`/bin/fish`): recovery and SSH login must not depend on a Nix profile generation.
 
 ## 5. Configure networking, time, and headless operation
 
@@ -219,10 +219,10 @@ It activates at the first boot. The root filesystem is ext4, so a plain swapfile
 In `/etc/default/earlyoom`, replace the `EARLYOOM_ARGS=` line with:
 
 ```bash
-EARLYOOM_ARGS="-r 0 -m 5 -s 10 --prefer ^(tsc|next-server.*|node)$ --avoid ^(orca-ide|omp|sshd|tailscaled|dockerd|systemd.*)$"
+EARLYOOM_ARGS="-r 0 -m 5 -s 10 --prefer ^(tsc|next-server.*|node)$ --avoid ^(pi|claude|codex|herdr|sshd|tailscaled|dockerd|systemd.*)$"
 ```
 
-earlyoom acts once available memory falls below 5% and free swap below 10%, killing a type-checker or dev server before the kernel's OOM killer picks an arbitrary victim such as the Orca runtime. The regexes are deliberately unquoted and space-free: `earlyoom.service` passes `$EARLYOOM_ARGS` through systemd word splitting without quote removal, so quotes would become literal characters and match nothing.
+earlyoom acts once available memory falls below 5% and free swap below 10%, killing a type-checker or dev server before the kernel's OOM killer picks an arbitrary victim such as an agent or herdr. The regexes are deliberately unquoted and space-free: `earlyoom.service` passes `$EARLYOOM_ARGS` through systemd word splitting without quote removal, so quotes would become literal characters and match nothing.
 
 ```bash
 systemctl enable systemd-networkd.service systemd-resolved.service
@@ -551,60 +551,25 @@ Do not open router ports or enable a public/LAN OpenSSH server.
 
 The Nix package/daemon are already installed. Run profile commands as `ian`, **without sudo**.
 
-### Get the configuration onto the host
-
-Use the version of the dotfiles checkout containing this guide and `nix/flake.lock`. A clone of an older published branch is not sufficient.
-
-While these changes remain local/uncommitted, transfer only the reviewed configuration. **On the existing workstation:**
-
-```bash
-tar -C ~/dotfiles-worktrees/nix-dev-env \
-  -czf /tmp/m75q-env.tar.gz nix README.md M75Q-ARCH-INSTALL.md
-scp /tmp/m75q-env.tar.gz ian@m75q:/tmp/
-```
-
-**On the M75q:**
-
-```bash
-mkdir -p ~/dotfiles
-tar -xzf /tmp/m75q-env.tar.gz -C ~/dotfiles
-cd ~/dotfiles
-```
-
-This file-copy bootstrap carries no Git history. Once the change is published, use a proper checkout containing it at the same path instead. Do not copy the workstation's home directory, secrets, or Bridge Commander state.
-
 ### Install and check
 
-```bash
-source /etc/profile.d/nix-daemon.sh
-test -f nix/flake.lock
-nix --extra-experimental-features 'nix-command flakes' profile add path:./nix#m75q
-export PATH="$HOME/.nix-profile/bin:$PATH"
-stow --target="$HOME" nix
-mkdir -p ~/.config/worktrunk && stow --target="$HOME" worktrunk
-mkdir -p ~/.config/herdr && stow --no-folding --target="$HOME" herdr
-sudo loginctl enable-linger "$USER"
-systemctl --user daemon-reload
-systemctl --user enable --now docker.service herdr.service
+Follow the README's [Bootstrap a machine](README.md#bootstrap-a-machine) with the `m75q` profile, including the `m75q` package and its user services. Then, in a new SSH login:
 
+```bash
 readlink "$HOME/.nix-profile"
 nix profile list
 node --version
 corepack --version
 bun --version
-python --version
 uv --version
-omp --version
+pi --version
 docker compose version
-DOCKER_HOST="unix:///run/user/$(id -u)/docker.sock" docker run --rm hello-world
-fish
+docker run --rm hello-world
 ```
 
-Current Arch Nix creates `~/.nix-profile` pointing to the user's profile during `profile add`; no installer-created link is assumed. That exact flow has been exercised as a fresh unprivileged Arch user. The stowed Fish snippet handles PATH; Arch's Bash login startup handles future Bash logins.
+The stowed `conf.d/nix.fish` puts the profile ahead of `/usr/bin` in every fish login. Keep `~/dotfiles` at the same path, and don't `chsh` to a Nix store path.
 
-Keep `~/dotfiles` at the same path. Do not run `stow */`, the desktop installer, `corepack enable`, or `chsh` to a Nix store path. Exit Fish to return to Bash.
-
-Authenticate separately with `gh auth login` and omp's `/login`. Use project-pinned package managers, for example `corepack pnpm install --frozen-lockfile` in a Node repository or `uv sync --locked` in a Python repository. The global profile does not replace project lockfiles or install browser/database dependencies.
+Authenticate separately with `gh auth login`, `claude`, `codex login`, and pi's `/login`. Use project-pinned package managers, for example `corepack pnpm install --frozen-lockfile` in a Node repository or `uv sync --locked` in a Python repository. The global profile does not replace project lockfiles or install browser/database dependencies.
 
 For profile updates, rollback, and temporary `nix develop` shells, see the [headless Nix README section](README.md#headless-arch-development-host-nix).
 
@@ -616,7 +581,7 @@ Do these while physical recovery remains easy:
 - [ ] Secure Boot reports enabled/user mode; both UKIs and bootloader are signed.
 - [ ] A normal reboot and a cold power-on reach the login prompt without a disk password.
 - [ ] Tailscale SSH works from the workstation after each boot.
-- [ ] A new remote login finds `node`, `corepack`, `bun`, `uv`, and `omp`.
+- [ ] A new remote login finds `node`, `corepack`, `bun`, `uv`, and `pi`.
 - [ ] `systemctl --failed` has no unexplained failures; networking, DNS, NTP, zram, the swapfile, and earlyoom work. `swapon --show` lists `/dev/zram0` at priority 100 and `/swapfile` at priority 10.
 - [ ] The fallback UKI can boot and auto-unlock; afterward select the normal entry again.
 - [ ] `sudo mkinitcpio -P` rebuilds and signs both images without regenerating the PCR key, and a subsequent reboot still auto-unlocks.

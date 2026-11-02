@@ -23,7 +23,7 @@ Prefix is `ctrl+space`.
 
 Costs, accepted:
 
-- In panes that aren't nvim, herdr takes the keys. fish loses `ctrl+l` (clear screen) and `ctrl+k` (kill line); `ctrl+j` (Enter) and `ctrl+h` (back one char) have other keys. omp loses `ctrl+k` (delete to end of line) and `ctrl+j` (new line; shift+enter still works). Backspace is unaffected.
+- In panes that aren't nvim, herdr takes the keys. fish loses `ctrl+l` (clear screen) and `ctrl+k` (kill line); `ctrl+j` (Enter) and `ctrl+h` (back one char) have other keys. pi loses `ctrl+k` (delete to end of line) and `ctrl+j` (new line; shift+enter still works). Backspace is unaffected.
 - herdr's native focus actions are unbound. Their defaults, `prefix+h/j/k/l`, would collide with `split_horizontal = prefix+h`.
 - nvim's LSP `<C-k>` signature help is insert-mode only now; in normal mode it would override navigation in every buffer with a language server. In neo-tree, `<C-j>/<C-k>` still move its cursor.
 
@@ -56,40 +56,10 @@ Rejected: wyattjoh/herdr-plugin-gh-pr (PR number and CI glyph only; needs Bun), 
 Worktrees are created through [worktrunk](https://worktrunk.dev) (`wt`), so each repo's setup and teardown hooks run: installing dependencies, copying `.env` files, and so on. Hooks live in the repo's own `.config/wt.toml`, or, for repos you can't commit to, under `[projects."github.com/<owner>/<repo>"]` in the worktrunk user config. worktrunk asks before running a project's hook commands the first time and after they change, and remembers approvals per machine in `~/.config/worktrunk/approvals.toml`.
 
 - **Where:** checkouts live at `~/dev/github.com/<owner>/<repo>`, worktrees in a parallel tree at `~/dev/wt/<owner>/<repo>/<branch>` (`worktree-path` in `worktrunk/.config/worktrunk/config.toml`). worktrunk has no host variable, so the host isn't in the worktree path. Only `config.toml` is stowed; `~/.config/worktrunk` must be a real directory first (`mkdir -p`), or stow would link the whole directory and approvals would be written into this repo.
-- **In herdr:** [herdr-worktrunk](https://github.com/devashish2203/herdr-worktrunk) (commit `f9df9ba`, config in `herdr/.config/herdr/plugins/config/worktrunk/config.toml`) opens a popup picker of the current repo's worktrees and branches. Enter on a match switches to it; typing a new name creates it from the default branch (worktrunk shortcuts like `pr:606` work too). It runs `wt switch` and then `herdr worktree open`, so every worktree it opens gets the [worktree layout](#worktree-layout). `prefix+shift+g` replaces herdr's own new-worktree dialog, which runs no hooks. Remove refuses worktrees with uncommitted changes or unmerged branches, closes the workspace, and deletes the branch once merged; it can leave an empty `~/dev/wt/<owner>/<repo>` directory behind.
-- **Installed by:** the Nix flake on M75q (`worktrunk` input at a release tag, because nixpkgs trails releases and `wt config plugins omp` needs 0.78.0 or later); pacman on the desktop. `wt config shell install` and `wt config plugins omp install` are run once per machine.
+- **In herdr:** [herdr-worktrunk](https://github.com/devashish2203/herdr-worktrunk) (commit `f9df9ba`, config in `herdr/.config/herdr/plugins/config/worktrunk/config.toml`) opens a popup picker of the current repo's worktrees and branches. Enter on a match switches to it; typing a new name creates it from the default branch (worktrunk shortcuts like `pr:606` work too). It runs `wt switch` and then `herdr worktree open`. `prefix+shift+g` replaces herdr's own new-worktree dialog, which runs no hooks. Remove refuses worktrees with uncommitted changes or unmerged branches, closes the workspace, and deletes the branch once merged; it can leave an empty `~/dev/wt/<owner>/<repo>` directory behind.
+- **Installed by:** the Nix flake on both machines. `wt config shell install` is run once per machine.
 
 Rejected: herdr's own worktrees (`herdr worktree create`): no hooks. worktrunk's default location (`<repo>.<branch>` next to the checkout): it would fill each owner directory with worktrees.
-
-## Worktree layout
-
-Every new git worktree workspace is laid out the same way, following [babarot's setup](https://github.com/babarot/dotfiles/blob/6d4b7528bc96312763a3da16a1a1e18ba21abb0f/nix/home-manager/tools/herdr/worktree-layout.nix):
-
-```
-┌───────────────────────┬───────────────────────┐
-│ agent                 │ review                │
-│ (omp, started)        │ (one-key menu)        │
-├───────────────────────┴───────────────────────┤
-│ shell                                         │
-└───────────────────────────────────────────────┘
-```
-
-The local plugin `worktree-layout` (`herdr/.local/share/herdr-plugins/worktree-layout`, linked with `herdr plugin link`) applies it from `worktree.created` and `worktree.opened` hooks, whoever created the worktree: herdr's new-worktree dialog, the workspace picker, or the review scripts. `prefix+shift+l` applies it to any other single-pane workspace. A workspace that already has more than one pane is left alone, so reopening a workspace that kept its panes, or one you've arranged yourself, isn't disturbed.
-
-- **Agent**: the kind is `agent` in `herdr/.config/herdr/plugins/config/worktree-layout/config.toml` (omp); empty leaves a plain shell. It's named after the workspace id, lowercased because herdr only accepts lowercase agent names, with each capital written as `_` plus the letter so names stay unique (`wW` → `agent-w_w`). A shell that's still starting up can refuse the agent as busy, so the hook retries that for up to 20 s; any other failure is logged and shown as a notification with herdr's message.
-- **Review**: a menu (`bin/review-pane`) rather than tuicr itself, because a fresh worktree has nothing to diff and tuicr exits on an empty range. Enter reviews against the base branch: commits since the merge-base with the remote's default branch plus uncommitted changes (`tuicr -r <merge-base>..HEAD -w`). Other keys: `w` uncommitted only, `c` tuicr's own commit and session picker, `p` the branch's GitHub PR, `b` the base branch, `q` plain shell. tuicr returns to the menu when it exits. The base is as of your last fetch. tuicr started here defaults `prefix+t` to the agent beside it.
-- **Shell**: the bottom 30%, full width.
-
-Zoom (`prefix+z`) the review pane when the diff needs the whole screen.
-
-For scripts: the pane labels `agent`, `review`, `shell` are set last, after the agent has started (or failed to), and `bin/layout-wait <workspace id>` waits for them and prints the three pane ids as JSON; check `herdr agent get <agent pane>` before prompting. A branch whose git config has `branch.<branch>.herdrReviewUrl` set to a PR URL is treated as a PR review: Enter opens `tuicr pr <url>`. The review scripts in [pr-review.md](pr-review.md) use both. Runs are logged to `~/.local/state/herdr/plugins/worktree-layout/layout.log`.
-
-Decisions:
-
-- **One tab, review beside the agent** (babarot), not review in a second tab (edmundmiller, lararosekelley) or a pane that follows you between tabs (bercail). Reviewing an agent's work is mostly a conversation with it; zoom covers the occasional full-width diff. Revisit if the side-by-side diff is too cramped in practice.
-- **A hook, not only a key**: every worktree gets the layout without a second step, and the review scripts wait for it instead of building their own panes, so there's one owner of the layout. The cost is that the hook can't tell who created a worktree (the event doesn't say), hence the single-pane rule and `layout-wait`.
-- **Base-branch review by default, not a review gate on every agent turn** (bercail's "agents stage, humans review"): whether a change needs that depends on the change; the menu makes the other scopes one key away.
-- **Linux only** (`flock` for one layout run per workspace).
 
 ## Workspace picker
 
@@ -97,7 +67,7 @@ Decisions:
 
 - **Rows:** open workspaces first (●, coloured by agent status, `*` on the focused one); then git repos among your top 40 zoxide directories (○; a subdirectory counts as its repo); then those repos' linked worktrees that aren't open (◌). Worktrees come last so a repo with dozens of them stays searchable by branch without crowding the top.
 - **Preview:** for an open workspace, its panes and agents; then `git status -sb` and the last eight commits.
-- **Enter:** focuses an open workspace, opens a worktree with `herdr worktree open`, or creates a workspace for a repo labelled with its directory name. Worktrees opened or created this way get the [worktree layout](#worktree-layout); a plain repo workspace doesn't (`prefix+shift+l` adds it).
+- **Enter:** focuses an open workspace, opens a worktree with `herdr worktree open`, or creates a workspace for a repo labelled with its directory name.
 - **ctrl-n:** asks for a new branch name and runs `herdr worktree create` from that repo's main checkout, based on its local default branch, without fetching.
 
 Basing new branches on `origin/main` was rejected: the branch would track it, which breaks a plain `git push`. herdr's own `prefix+w` picker stays, for open workspaces only. Listing takes about 0.2s with a real zoxide database. In a narrow popup the path and agent columns get cut first; label and branch are capped at 24 and 20 characters.

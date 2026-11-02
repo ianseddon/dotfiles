@@ -1,418 +1,201 @@
 # Dotfiles
 
-Modern dotfiles configuration using GNU Stow for symlink management.
+Dotfiles for two Arch machines, deployed with [GNU Stow](https://www.gnu.org/software/stow/):
+
+- **Desktop:** the Hyprland workstation. `XDG_CONFIG_HOME` is set (uwsm).
+- **M75q:** the headless development host on the tailnet, reached over Tailscale SSH and herdr. `XDG_CONFIG_HOME` is unset.
+
+Both run the same development tools from one Nix flake and the same agent, review, and shell config from the Stow packages here. What only one machine needs is in its own place: `nix/hosts/<name>.nix` for packages, the `m75q` package for the M75q's units.
 
 ## Structure
 
-This repository uses the [GNU Stow](https://www.gnu.org/software/stow/) package manager to organize and deploy dotfiles. Each directory represents a "package" that can be independently managed.
+Each top-level directory is a Stow package, mirroring `$HOME`.
 
-```
-dotfiles/
-├── nix/            # Pinned headless development tools and Nix/Fish integration
-├── fish/           # Fish shell configuration
-├── zellij/         # Zellij terminal multiplexer
-├── ghostty/        # Ghostty terminal emulator
-├── nvim/           # Neovim configuration
-├── hyprland/       # Hyprland window manager
-└── README.md
-```
+| Package | What it holds | Desktop | M75q |
+|---|---|---|---|
+| `nix` | The flake and its fish/session PATH integration | ✓ | ✓ |
+| `m75q` | Rootless Docker and herdr server units, `DOCKER_HOST` | | ✓ |
+| `fish` | Shell config, functions, plugins | ✓ | ✓ |
+| `git`, `gh`, `gh-dash`, `lazygit`, `bat`, `fd`, `nvim` | CLI tool config | ✓ | ✓ |
+| `agents` | `~/AGENTS.md`, shared skills, `nexus-skills` | ✓ | ✓ |
+| `pi`, `claude` | pi and Claude Code settings | ✓ | ✓ |
+| `herdr`, `worktrunk`, `hunk`, `tuicr` | Workspaces, worktrees, and review | ✓ | ✓ |
+| `hyprland`, `waybar`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
+| `commitizen` | Commit message conventions | ✓ | ✓ |
 
-## Headless Arch Development Host (Nix)
+`ly` and `pam` are system files, installed into `/etc` by hand rather than stowed; `i3` is the retired X11 session, kept for reference.
 
-For the M75q's complete disk-to-development setup, use [the targeted Arch installation guide](M75Q-ARCH-INSTALL.md). It includes encrypted root, Secure Boot, TPM auto-unlock, recovery, and the transfer path while this configuration is not yet published.
+Packages whose app writes its own state next to the config are stowed with `--no-folding`, so only the tracked files are links and the directory stays real. `agents` and `gh` are stowed without it: their directories are links on purpose.
 
-The `nix/` flake provides the same pinned tools as either a persistent user profile or a temporary development shell on `x86_64-linux`. It is not an Arch installer or a NixOS configuration.
+## Nix
 
-It is split by machine, the way the reference setups in `docs/multiplexer-agent-review-dotfiles.md` split theirs: `nix/dev.nix` lists the development tools every Nix-managed machine gets, and `nix/hosts/<name>.nix` adds what exists only because of that machine (M75q: Stow and the rootless Docker engine). Each host is one profile, `packages.x86_64-linux.<host>`; the development shell is `dev.nix` alone. Plain package lists, not Home Manager modules, for now.
+`nix/` provides the development tools as a user profile on `x86_64-linux`. It is not an Arch installer or a NixOS configuration.
 
-- **Arch owns:** the kernel, hardware, networking, Nix daemon, OpenSSH, and Tailscale.
-- **Nix owns:** Git, GitHub CLI, worktrunk (`wt`), Stow, ripgrep, fd, jq, fzf, zoxide, AWS CLI v2 with the SSM Session Manager plugin, pgcli, Fish, herdr, Zellij, Neovim, tuicr, Node 24 with npm/Corepack, Bun, Python 3.12, uv, GCC, Make, pkg-config, rootless Docker Engine with Compose/Buildx, and omp.
-- **Stow owns:** dotfile symlinks. No Home Manager or changes to the login shell.
+- **Arch owns:** the kernel, hardware, networking, the Nix daemon, OpenSSH, Tailscale, the desktop session, and the login shell (`/bin/fish` from pacman, so a login never depends on a Nix generation).
+- **Nix owns:** every development tool, listed in `nix/dev.nix`: git and gh (with its extensions), worktrunk, herdr, Hunk, tuicr, the agents (pi, Claude Code, codex), Node 24 with npm and Corepack, Bun, uv, fnm, the AWS CLI, linters, and the rest. `nix/hosts/m75q.nix` adds rootless Docker.
+- **Stow owns:** the dotfile symlinks. No Home Manager.
 
-On the headless host, keep Arch's `/bin/bash` as the login shell. Launch Nix-provided Fish after login; do not follow the desktop installer's `chsh` steps.
+A tool belongs in `dev.nix` when both machines use it. Python is uv's (per-project interpreters, `uv tool`); Node is fnm's per project (`.node-version`, `.nvmrc`, `engines`), falling back to `fnm default`, the newest 24.x. Nix's Node 24 serves everything outside fish.
 
-`nix/flake.lock` pins the complete Nixpkgs input. herdr, omp, and worktrunk come from their upstream flakes at published release tags rather than the default branch; the tag in `nix/flake.nix` is the version. Project dependencies remain in each repository's own lockfiles. Corepack supplies `pnpm`/`yarn` shims and respects each project's `packageManager`; there is no globally pinned pnpm version.
+nixpkgs is the only flake input that moves on its own, so `nix flake update` advances everything. pi is the exception: it comes from its repository at a release tag (`inputs.pi.url` in `nix/flake.nix`), because nixpkgs trails its releases and its main branch often doesn't build. `nix/patches/pi-schema-tarball.patch` carries an upstream fix until [earendil-works/pi#11685](https://github.com/earendil-works/pi/pull/11685) merges; delete it then, and the build fails loudly if it stops applying.
 
-### Bootstrap a New Host
+### Bootstrap a machine
 
-Start with an installed, networked Arch system and a normal user with sudo access. Run the bootstrap from Bash:
+From an installed, networked Arch system with a normal sudo user:
 
 ```bash
-sudo pacman -Syu --needed nix git openssh tailscale
+sudo pacman -Syu --needed nix git fish openssh tailscale stow
 sudo systemctl enable --now nix-daemon.service tailscaled.service
 source /etc/profile.d/nix-daemon.sh
-
-# Authenticate the new machine; access still depends on tailnet SSH policy.
 sudo tailscale up --ssh
 
-# Once a published branch contains nix/; otherwise use the guide's file transfer.
 git clone https://github.com/ianseddon/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-
-test -f nix/flake.lock
-# Explicit flags are needed before the user-level nix.conf is installed.
+# `desktop` or `m75q`. Explicit flags: the user-level nix.conf isn't stowed yet.
 nix --extra-experimental-features 'nix-command flakes' profile add path:./nix#m75q
 export PATH="$HOME/.nix-profile/bin:$PATH"
-stow --target="$HOME" nix
-# worktrunk's worktree location; a real directory first, so only config.toml is
-# linked and per-machine approvals stay out of the repo.
-mkdir -p ~/.config/worktrunk && stow --target="$HOME" worktrunk
-# herdr: the desktop's config and local plugins. --no-folding links files only,
-# so each plugin's config dir stays real and machine state (Collie's .env) stays
-# out of the repo.
-mkdir -p ~/.config/herdr && stow --no-folding --target="$HOME" herdr
-# Rootless Docker runs as a user service; lingering starts it without a login.
-sudo loginctl enable-linger "$USER"
-systemctl --user daemon-reload
-systemctl --user enable --now docker.service
-# The herdr server, so plugins (Collie) have a socket at boot before the desktop attaches.
-systemctl --user enable --now herdr.service
 
-fish
+# pi's settings.json: drop the state pi writes back on each machine when staging.
+git config filter.pi-settings.clean "jq --indent 2 'del(.deviceId, .lastChangelogVersion, .extensionChangelogVersions)'"
+git config filter.pi-settings.smudge cat
+
+mkdir -p ~/.config/{worktrunk,herdr,hunk,pi} ~/.pi/agent ~/.claude
+stow --no-folding --target="$HOME" nix fish git gh-dash lazygit bat fd nvim pi claude herdr worktrunk hunk
+stow --target="$HOME" agents gh tuicr
+fnm install 24 && fnm default 24
 ```
 
-Use a checkout containing this configuration. Keep it at the same path: both Stow symlinks and profile upgrades refer to it. Stow refuses conflicting existing files; reconcile those explicitly rather than forcing an overwrite.
+The M75q also stows `m75q` (`--no-folding`) and starts its user services; lingering runs them without a login:
 
-Only the `nix`, `worktrunk`, and `herdr` Stow packages are installed here. `nix` enables flakes, adds the user profile to Fish's PATH without overriding an active Nix development shell, and installs the rootless Docker user unit plus Fish's `DOCKER_HOST`; `worktrunk` sets where worktrees go (`~/dev/wt/<owner>/<repo>/<branch>`); `herdr` is the desktop's herdr config, so the host's server runs the same plugins and keys. They do not install the desktop Fish configuration, source `secrets.fish`, or start desktop services. Do not run the desktop `install.sh` or `stow */` on the headless host.
+```bash
+sudo loginctl enable-linger "$USER"
+systemctl --user daemon-reload
+systemctl --user enable --now docker.service herdr.service
+```
 
-Tailscale SSH does not require enabling `sshd` or exposing port 22 publicly. Complete GitHub authentication with `gh auth login`, and configure the desired provider through omp's `/login` separately. No credentials, SSH keys, or agent state belong in this flake. In particular, do not copy Bridge Commander state or start a second writer as part of this bootstrap.
+Keep the checkout at `~/dotfiles`: the symlinks and the profile refer to it. Stow refuses to overwrite existing files; move each aside and compare it with the repo's version rather than forcing it.
 
-worktrunk's shell integration and its omp hook are generated by `wt` itself rather than stowed, because the `nix` package doesn't install the desktop Fish configuration: run `wt config shell install` (bash and fish wrappers, so `wt switch` can change directory) and `wt config plugins omp install` (agent status markers in `wt list`) once after the profile is installed.
+Then sign in: `gh auth login`, `claude`, `codex login`, and pi's `/login` per provider. Nothing in this repository holds a credential (see [Secrets](#secrets)).
 
-#### herdr plugins and Collie
+### Update and roll back
 
-The desktop opens this host as a saved herdr machine (`herdr machine add m75q --label M75q`). The desktop client draws the UI with its own theme and keys, but plugin actions and hooks run on the server that owns the workspace, and herdr copies no plugins or config to SSH hosts. So the host installs the desktop's plugins at the same commits:
+```bash
+cd ~/dotfiles
+nix flake update --flake path:./nix      # nixpkgs; a pi release is an edit of its tag
+nix build --no-link path:./nix#desktop path:./nix#m75q
+nix profile upgrade desktop               # or m75q
+# Review and commit nix/flake.lock.
+
+nix profile history
+nix profile rollback
+```
+
+A new herdr keeps running the old binary, and its panes, until the server stops (`herdr server stop`; the desktop's next connection starts it again).
+
+### Docker (M75q)
+
+Docker runs rootless: `docker.service` is a `systemd --user` unit running the profile's `dockerd-rootless`, so there's no pacman Docker, `docker` group, or sudo. Arch only supplies `newuidmap`/`newgidmap` and the `ian:100000:65536` range in `/etc/subuid` and `/etc/subgid`. `m75q/.config/fish/conf.d/docker.fish` points the CLI at `/run/user/$UID/docker.sock`, because Tailscale SSH sessions don't set `XDG_RUNTIME_DIR`.
+
+```bash
+systemctl --user status docker.service
+docker info --format '{{json .SecurityOptions}}'   # includes "name=rootless"
+```
+
+Rootless limits: published ports must be 1024 or higher, `--network host` is RootlessKit's namespace, and files that non-root container users write to bind mounts belong to subordinate UIDs (reclaim with `docker run --rm -v "$PWD:/w" alpine chown -R 0:0 /w`). Images and volumes live under `~/.local/share/docker`.
+
+## Agents
+
+pi, Claude Code, and codex all run from the Nix profile; their self-updaters don't apply.
+
+- **Instructions:** `~/AGENTS.md` (from `agents/AGENTS.md`).
+- **Skills:** `~/.agents/skills` is `agents/.agents/skills`. Skills a Nix package ships (herdr, Hunk, worktrunk, gh-stack) are links into `~/.nix-profile/share/skills`, so they move with the package; the rest are copies, and `agents/.agents/.skill-lock.json` records where they came from.
+- **pi:** `pi/.pi/agent/settings.json` holds the shared settings and packages (`pi update --extensions` installs them). `pi-web-access` reads `web-search.json` from `~/.config/pi` when `XDG_CONFIG_HOME` is set and from `~/.pi/agent` when it isn't, so the file is linked into both. It routes `web_search` through Kagi (v1 API, funded balance), then Gemini, then keyless Exa, and reads `$KAGI_API_KEY` and `$GEMINI_API_KEY` from the environment.
+- **Claude Code:** `claude/.claude/settings.json`, including the plugin marketplaces it installs from.
+- **codex:** its `config.toml` is machine state (project trust, hook hashes), so it isn't tracked; add its plugins with `codex plugin add`.
+
+### Nexus-only skills
+
+The AWS and Bedrock skills are work material, so they stay out of this public repository and out of every other project. Each machine keeps them in `~/.local/share/nexus-skills/<name>/`, and `nexus-skills` links them into a checkout's `.agents/skills` (pi, codex) and `.claude/skills` (Claude Code), listing the links in `.git/info/exclude` so they never show as changes. It only touches `workforce-monorepo` and `nexus-*` checkouts. worktrunk runs it for every new worktree; for existing checkouts:
+
+```bash
+nexus-skills ~/dev/nexus/*/          # any checkouts; others are skipped
+```
+
+### WakaTime
+
+Every harness reports to WakaTime through its own plugin, each of which installs `wakatime-cli` under `~/.wakatime` and reads `~/.wakatime.cfg`:
+
+```bash
+# pi: npm:pi-wakatime is in settings.json.
+# Claude Code: the marketplace and plugin are in settings.json; on a new machine
+claude plugin install claude-code-wakatime@wakatime
+# codex
+codex plugin marketplace add wakatime/codex-cli-wakatime
+codex plugin add codex-cli-wakatime@wakatime
+```
+
+Since November 2026 WakaTime accepts API keys only on the endpoints plugins use (heartbeats, today's total); anything reading the rest of its API needs OAuth.
+
+## Review
+
+Hunk reviews my own agents' changes; tuicr reviews other people's PRs. See [docs/pr-review.md](docs/pr-review.md).
+
+Hunk's extensions are copied, not linked: Hunk resolves their imports relative to the real path, which a Stow link breaks.
+
+```bash
+mkdir -p ~/.config/hunk/extensions
+cp -R ~/dotfiles/hunk/extensions/* ~/.config/hunk/extensions/
+```
+
+## herdr
+
+The desktop opens the M75q as a saved herdr machine (`herdr machine add m75q --label M75q`). Plugin actions and hooks run on the server that owns the workspace, and herdr copies nothing to SSH hosts, so both machines install the same plugins:
 
 ```bash
 herdr plugin install -y --ref b187fb76a9b12810d4fde937da0e4215689006d0 ianseddon/herdr-git-status
 herdr plugin install -y --ref e393ef593e44d2497f43d20aa7b0e4a26ea3d445 tomasvarga/herdr-pickr
 herdr plugin install -y --ref 742db891e7d1f9a550b16c01dc8a6763f2b1493a paulbkim-dev/vim-herdr-navigation
 herdr plugin install -y --ref f9df9ba700b8a4f4d97ddfe3ea3eb345e80b880b devashish2203/herdr-worktrunk
+herdr plugin install -y --ref v0.13.0 jeffarese/herdr-bar
+herdr plugin install -y --ref v0.5.0 jhochenbaum/herdr-hunk-diff
 for p in ~/dotfiles/herdr/.local/share/herdr-plugins/*/; do herdr plugin link "$p"; done
 # Once: git-status's startup hook only restarts a poller that was running before.
 herdr plugin action invoke start --plugin git-status
 ```
 
-[Collie](https://github.com/AltanS/collie) sends phone notifications when an agent waits on you, so it runs where the agents do. It controls terminals, so set both trust gates before the first start: without them any tailnet identity that reaches it gets a shell, and Host-header checks are off. The VAPID keys are this host's own; a phone subscribes to each Collie origin separately anyway.
+### Phone and browser: Ovis (M75q)
+
+[Ovis](https://github.com/devswha/ovis) (formerly herdr web UI) runs where the agents do: it shows herdr's layout, each agent's transcript as a chat beside the live terminal, and sends push alerts when an agent needs input or finishes. Requests from this host's own Tailscale login get in; any other device needs a pairing code.
 
 ```bash
-herdr plugin install -y --ref 0c647372d89d50ec62dfe8b569e9109a830660e5 AltanS/collie
-cfg=$(herdr plugin config-dir herdr.collie); mkdir -p "$cfg"
-printf '%s\n' "COLLIE_TRUSTED_USER=ianseddon55@gmail.com" \
-  "COLLIE_PUBLIC_HOSTS=m75q.hawk-monster.ts.net" > "$cfg/.env"; chmod 600 "$cfg/.env"
-c=$(herdr plugin list --json | jq -r '.result.plugins[] | select(.plugin_id=="herdr.collie") | .plugin_root')
-bash "$c/scripts/collie-ctl.sh" push-keys mailto:ianseddon55@gmail.com
-herdr plugin action invoke start --plugin herdr.collie   # systemd --user unit + tailscale serve
+herdr plugin install devswha/ovis --yes
+cfg=$(herdr plugin config-dir devswha.ovis); mkdir -p "$cfg"
+printf '%s\n' OVIS_TELEMETRY=0 OVIS_APP_NAME=M75q \
+  OVIS_PUSH_SUBJECT=mailto:ianseddon55@gmail.com > "$cfg/env"; chmod 600 "$cfg/env"
+herdr plugin action invoke devswha.ovis.start   # also starts with herdr from now on
+tailscale serve --bg --https=443 http://127.0.0.1:7317
 ```
 
-Then open `https://m75q.hawk-monster.ts.net` on the phone, install it, and enable notifications in Settings; `bash "$c/scripts/collie-ctl.sh" push-test` sends one. Tailscale's operator must be this user (`sudo tailscale set --operator=$USER`) for `tailscale serve` to run unprivileged. Renaming the host changes this origin: every phone has to subscribe again.
+Open `https://m75q.hawk-monster.ts.net` on the phone, install it, then **Settings → Alerts → Send test**. HTTPS is required for install and push, Tailscale's operator must be this user (`sudo tailscale set --operator=$USER`) for `tailscale serve` to run unprivileged, and renaming the host changes the origin, so phones subscribe again. State (push keys, subscriptions, updates) is in `~/.config/ovis`; new releases come through **Settings → Updates**. Collie, used before it, is removed from both machines.
 
-The flake installs the AWS CLI, not its configuration: this repository is public, and `~/.aws/config` names account IDs and SSO start URLs. Copy `~/.aws/config` from the workstation (mode 0600). The host has no browser, so sign in with a flow that prints a URL and code for another device:
+## Secrets
+
+None are in this repository. Today they're environment variables (`fish/.config/fish/secrets.fish` on the desktop, untracked and optional) and each tool's own login. The AWS CLI's configuration stays out too, since `~/.aws/config` names account IDs and SSO URLs: copy it between machines (mode 0600) and sign in on the headless host with a device code:
 
 ```bash
-aws sso login --use-device-code --sso-session <name>   # IAM Identity Center profiles
-aws login --remote                                     # IAM/root sign-in without SSO
+aws sso login --use-device-code --sso-session <name>
 ```
-
-### Use the Environment
-
-The persistent profile makes the tools available without entering a shell. From a project checkout:
-
-```bash
-corepack pnpm install --frozen-lockfile
-# Python projects continue to use their own pyproject.toml and uv.lock.
-uv sync --locked
-```
-
-Run the command appropriate to that project, not both indiscriminately. Do not run `corepack enable`: the Nix package already provides the shims, and the Nix store is read-only.
-
-To try the tools without adding them to a profile or installing dotfiles, run this from the dotfiles checkout after installing Nix:
-
-```bash
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix
-# Or launch Fish with the same toolchain:
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command fish
-```
-
-Use `path:./nix` deliberately: it keeps the flake source limited to this directory instead of copying the entire dotfiles repository into the world-readable Nix store. Keep secrets out of `nix/` too.
-
-### Docker
-
-Docker runs rootless: `docker.service` is a `systemd --user` unit running the profile's `dockerd-rootless`, and user lingering starts it at boot. It needs no pacman packages, sudo, or `docker` group, which would be root-equivalent. Arch only supplies `newuidmap`/`newgidmap` and the `ian:100000:65536` range in `/etc/subuid` and `/etc/subgid`. A rootful Arch `docker` package was rejected: Arch would own the engine instead of this flake, and every membership of the `docker` group grants root.
-
-`nix/.config/fish/conf.d/docker.fish` points the CLI at `/run/user/$UID/docker.sock`, because Tailscale SSH sessions do not set `XDG_RUNTIME_DIR`. `docker compose` and `docker buildx` are wired into the Nix CLI wrapper; `docker-compose` remains for older scripts.
-
-```bash
-systemctl --user status docker.service
-docker info --format '{{json .SecurityOptions}}'   # includes "name=rootless"
-docker compose up -d
-```
-
-Rootless limits: published ports must be 1024 or higher, `--network host` means RootlessKit's namespace rather than the machine's, and files that non-root container users write to bind mounts are owned by subordinate UIDs on the host. Reclaim those with `docker run --rm -v "$PWD:/w" alpine chown -R 0:0 /w` (container root maps to `ian`). Images and volumes live under `~/.local/share/docker`, not `/var/lib/docker`.
-
-### Update and Roll Back
-
-From the same dotfiles checkout, after the bootstrap:
-
-```bash
-# After editing flake.nix or pulling an existing lockfile:
-nix flake check path:./nix
-nix build --no-link path:./nix#m75q
-nix profile upgrade m75q
-
-# Once, on a host whose profile entry is still the old `dev`: the output was
-# renamed, so `upgrade dev` now fails instead of silently dropping Docker.
-nix profile remove dev && nix profile add path:./nix#m75q
-
-# Once, when herdr's config moved from the nix package to the herdr package:
-# restowing nix drops the dangling ~/.config/herdr/config.toml link.
-stow -R --target="$HOME" nix && stow --no-folding --target="$HOME" herdr
-
-# A new herdr tag: the running server keeps the old binary, and its panes, until
-# it stops. Stopping ends every pane; the desktop's next connection starts it again.
-herdr server stop
-
-# Only when deliberately advancing package versions. This moves Nixpkgs;
-# herdr, omp, and worktrunk move only when their release tags in nix/flake.nix change.
-nix flake update --flake path:./nix
-# Review and commit nix/flake.lock, then repeat the checks and upgrade above.
-
-# Restore the previous user-profile generation if needed:
-nix profile history
-nix profile rollback
-```
-
-Rollback changes the user profile, not Stow-managed files, project dependencies, or data. Keep the previous lockfile in Git for reproducibility; do not garbage-collect old generations before deciding whether to roll back.
-
-This baseline does not provision databases, browsers, editor plugins, automation services, or secrets. Add project-specific dependencies in the relevant project's environment rather than expanding the shared tool list speculatively; run project services through Docker Compose.
-
-## New Setup (Fish + Zellij + Ghostty)
-
-This is a separate, pacman-managed desktop setup, not a continuation of the headless Nix instructions. Do not run it on the M75q development host.
-
-### Prerequisites
-
-Install the required tools:
-
-```bash
-# Arch Linux
-sudo pacman -S fish zellij ghostty stow
-
-# Or using your preferred package manager
-```
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <your-repo-url> ~/.dotfiles
-cd ~/.dotfiles
-```
-
-2. Install the configurations using stow:
-```bash
-# Install all configurations
-stow */
-
-# Or install specific configurations
-stow fish
-stow zellij
-stow ghostty
-```
-
-3. Change your default shell to fish:
-```bash
-chsh -s $(which fish)
-```
-
-### Fish Shell Features
-
-- **Modern prompt** with git integration
-- **Vi key bindings** enabled by default
-- **Zellij integration** - auto-starts zellij sessions
-- **Modern tool aliases** (eza, bat, fd, rg if available)
-- **Useful functions**:
-  - `mkcd <dir>` - Create directory and cd into it
-  - `extract <archive>` - Extract various archive formats
-  - `zj [session] [layout]` - Zellij session manager
-
-### Zellij Configuration
-
-- **Alt-based keybindings** for easy navigation
-- **Custom layouts** for different workflows
-- **Catppuccin theme** for consistent appearance
-- **Fish shell integration**
-
-Key bindings:
-- `Alt + h/j/k/l` - Navigate panes
-- `Alt + t` - New tab
-- `Alt + w` - Close tab
-- `Alt + 1-9` - Switch to tab
-- `Alt + |` - Split right
-- `Alt + -` - Split down
-- `Alt + r` - Resize mode
-- `Alt + s` - Scroll mode
-
-### Ghostty Configuration
-
-- **Catppuccin theme** matching zellij
-- **Fish shell integration**
-- **Optimized for zellij** workflow
-- **Smart clipboard handling**
-
-## Migration from Zsh + Tmux + Kitty
-
-### Removing Old Configuration
-
-```bash
-# Backup existing configurations
-mkdir -p ~/.config/backup
-mv ~/.config/zsh ~/.config/backup/ 2>/dev/null || true
-mv ~/.tmux.conf ~/.config/backup/ 2>/dev/null || true
-mv ~/.config/kitty ~/.config/backup/ 2>/dev/null || true
-
-# Remove old shell configuration
-rm ~/.zshrc ~/.zshenv 2>/dev/null || true
-```
-
-### Key Differences
-
-| Old Stack | New Stack | Notes |
-|-----------|-----------|-------|
-| Zsh | Fish | More user-friendly, better autocompletion |
-| Tmux | Zellij | Modern, Rust-based, better UX |
-| Kitty | Ghostty | GPU-accelerated, better performance |
-
-## Usage
-
-### Managing Dotfiles with Stow
-
-```bash
-# Install a package
-stow <package-name>
-
-# Remove a package
-stow -D <package-name>
-
-# Reinstall a package
-stow -R <package-name>
-
-# Dry run (see what would happen)
-stow -n <package-name>
-```
-
-### Adding New Configurations
-
-1. Create a new directory with the package name
-2. Mirror the home directory structure inside it
-3. Place your configuration files in the appropriate locations
-4. Use stow to install: `stow <package-name>`
-
-Example:
-```
-new-package/
-└── .config/
-    └── new-app/
-        └── config.toml
-```
-
-### Zellij Workflows
-
-```bash
-# Start a development session
-zj dev dev
-
-# Start a work session
-zj work work  
-
-# List all sessions
-zj
-
-# Attach to existing session
-zj <session-name>
-```
-
-## Customization
-
-### Fish Shell
-
-- Edit `fish/.config/fish/config.fish` for shell configuration
-- Add functions in `fish/.config/fish/functions/`
-- Modify aliases and environment variables as needed
-
-### Zellij
-
-- Edit `zellij/.config/zellij/config.kdl` for keybindings and themes
-- Add custom layouts in the `layouts` section
-- Adjust keybindings to your preference
-
-### Ghostty
-
-- Edit `ghostty/.config/ghostty/ghostty` for terminal settings
-- Adjust font, theme, and performance settings
-- Customize keybindings for your workflow
 
 ## Troubleshooting
 
-### Stow Conflicts
+### Hyprlock rejects the correct password
 
-If stow reports conflicts:
-```bash
-# Remove conflicting files/links
-rm ~/.config/fish/config.fish  # example
-
-# Then retry stow
-stow fish
-```
-
-### Shell Not Changing
-
-If fish doesn't become your default shell:
-```bash
-# Check available shells
-cat /etc/shells
-
-# Ensure fish is in the list
-which fish
-
-# Change shell
-chsh -s $(which fish)
-```
-
-### Zellij Not Auto-starting
-
-If zellij doesn't auto-start, check:
-1. Zellij is installed and in PATH
-2. Fish configuration is properly sourced
-3. No conflicts with other terminal multiplexers
-
-### Hyprlock Rejects the Correct Password
-
-`pam_faillock` keeps a single per-user tally (`/run/faillock/$USER`, `deny=3`,
-`unlock_time=600`). Failed prompts from *any* service share it, including
-`sudo` invoked without a TTY - an agent shell or a `paru`/`pacman` retry loop
-logs `pam_unix(sudo:auth): conversation failed` every few minutes and drains
-the tally. Hyprlock then refuses the correct password and reports minutes left
-to unlock.
+`pam_faillock` keeps one per-user tally (`/run/faillock/$USER`, `deny=3`, `unlock_time=600`). Failed prompts from any service share it, including `sudo` without a TTY: an agent shell or a `paru`/`pacman` retry loop logs `pam_unix(sudo:auth): conversation failed` every few minutes and drains the tally, and Hyprlock then refuses the correct password.
 
 ```bash
-# Who burned the attempts, and when
 faillock --user $USER
 journalctl -b -g 'authentication failure|conversation failed|faillock' -o short-iso
-
-# Clear it (no root needed; the tally file is owned by the user)
-faillock --user $USER --reset
+faillock --user $USER --reset   # no root needed
 ```
 
-`pam/hyprlock` removes faillock from the locker's stack so unrelated failures
-can no longer lock a live session; deploy it with
-`sudo install -m 0644 pam/hyprlock /etc/pam.d/hyprlock`. Package managers still
-need a real TTY: run them in a terminal, not from a detached/non-TTY shell.
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## License
-
-This project is licensed under the MIT License. 
+`pam/hyprlock` removes faillock from the locker's stack, so unrelated failures can't lock a live session: `sudo install -m 0644 pam/hyprlock /etc/pam.d/hyprlock`. Run package managers in a real terminal, not a detached shell.

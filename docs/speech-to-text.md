@@ -26,7 +26,7 @@ The existing US keyboard layout is ideal for `wtype`; no `dotool`, `ydotool`, in
 
 - [`voxtype/.config/voxtype/config.toml`](../voxtype/.config/voxtype/config.toml) owns transcription, audio, and output settings.
 - [`voxtype/.config/systemd/user/voxtype.service.d/gpu.conf`](../voxtype/.config/systemd/user/voxtype.service.d/gpu.conf) pins Vulkan to NVIDIA.
-- [`hyprland/.config/hypr/bindings.conf`](../hyprland/.config/hypr/bindings.conf) owns the `Super+Ctrl+X` toggle binding.
+- [`hyprland/.config/hypr/bindings.lua`](../hyprland/.config/hypr/bindings.lua) owns the `Super+Ctrl+X` toggle binding.
 
 This keeps config in the repo while leaving models and generated service state in their normal XDG locations.
 

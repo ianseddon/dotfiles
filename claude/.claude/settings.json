@@ -1,0 +1,17 @@
+{
+  "model": "opus",
+  "extraKnownMarketplaces": {
+    "wakatime": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/wakatime/claude-code-wakatime.git"
+      }
+    }
+  },
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "auto",
+  "enabledPlugins": {
+    "claude-code-wakatime@wakatime": true
+  }
+}

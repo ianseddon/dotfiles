@@ -1,0 +1,8 @@
+{
+  "kagiApiKey": "$KAGI_API_KEY",
+  "geminiApiKey": "$GEMINI_API_KEY",
+  "searchRouting": {
+    "providers": ["kagi", "gemini", "exa"],
+    "fallbackOn": ["unsupported", "transient", "quota", "network", "invalid-response", "empty"]
+  }
+}

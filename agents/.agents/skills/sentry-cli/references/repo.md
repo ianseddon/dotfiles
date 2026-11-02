@@ -1,6 +1,6 @@
 ---
 name: sentry-cli-repo
-version: 0.44.1
+version: 0.46.0
 description: Work with Sentry repositories
 requires:
   bins: ["sentry"]

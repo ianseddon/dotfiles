@@ -1,0 +1,47 @@
+#!/bin/sh
+# Link the Nexus-only agent skills into Nexus checkouts.
+#
+#   nexus-skills [checkout...]    (default: the current directory)
+#
+# The skills (AWS, for now) are work material, so they stay out of the public
+# dotfiles and out of every other repository: each machine keeps them in
+# ~/.local/share/nexus-skills/<name>/SKILL.md. Agents only read project skills
+# from inside the repository, so this links each one into the checkout's
+# .agents/skills (pi, codex) and .claude/skills (Claude Code), and lists the
+# links in the shared .git/info/exclude so no worktree ever shows them.
+# worktrunk runs it for every new worktree; run it by hand for existing
+# checkouts. Anything that isn't workforce-monorepo or nexus-* is skipped.
+set -eu
+
+store="${NEXUS_SKILLS_DIR:-$HOME/.local/share/nexus-skills}"
+[ -d "$store" ] || exit 0
+[ "$#" -gt 0 ] || set -- .
+
+for checkout in "$@"; do
+    root=$(git -C "$checkout" rev-parse --show-toplevel 2>/dev/null) || continue
+    url=$(git -C "$root" remote get-url origin 2>/dev/null) || continue
+    repo=$(basename "$url" .git)
+    case "$repo" in
+    workforce-monorepo | nexus-*) ;;
+    *) continue ;;
+    esac
+
+    exclude="$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)/info/exclude"
+    mkdir -p "$(dirname "$exclude")"
+    touch "$exclude"
+
+    for skills in .agents/skills .claude/skills; do
+        # workforce-monorepo's .claude/skills is a link to .agents/skills.
+        [ -L "$root/$skills" ] && continue
+        mkdir -p "$root/$skills"
+        for skill in "$store"/*/; do
+            name=$(basename "$skill")
+            if git -C "$root" ls-files --error-unmatch "$skills/$name" >/dev/null 2>&1; then
+                echo "nexus-skills: $repo tracks its own $skills/$name; not linking" >&2
+                continue
+            fi
+            ln -sfn "$store/$name" "$root/$skills/$name"
+            grep -qxF "/$skills/$name" "$exclude" || echo "/$skills/$name" >>"$exclude"
+        done
+    done
+done

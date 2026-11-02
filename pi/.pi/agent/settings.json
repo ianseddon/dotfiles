@@ -1,0 +1,17 @@
+{
+  "defaultProvider": "anthropic",
+  "defaultModel": "claude-opus-5-5",
+  "defaultThinkingLevel": "high",
+  "packages": [
+    "npm:@gotgenes/pi-anthropic-auth",
+    "npm:pi-wakatime",
+    "npm:pi-web-access"
+  ],
+  "defaultTools": [
+    "+codemode"
+  ],
+  "warnings": {
+    "anthropicExtraUsage": false
+  },
+  "hideThinkingBlock": true
+}

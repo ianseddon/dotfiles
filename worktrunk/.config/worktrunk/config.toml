@@ -7,3 +7,13 @@
 # so the checkouts stay clean. `owner` is the primary remote's owner path (it can
 # include subgroups); worktrunk has no host variable.
 worktree-path = "~/dev/wt/{{ owner }}/{{ repo }}/{{ branch | sanitize }}"
+
+# Every new worktree of a Nexus repository gets the Nexus-only skills; the
+# script skips other repositories.
+[pre-start]
+nexus-skills = "~/.local/bin/nexus-skills {{ worktree_path }}"
+
+# Personal agent-browser proxy config for this repo only, from firstmate where
+# that checkout exists.
+[projects."github.com/EBSCO-Nexus/workforce-monorepo".post-start]
+agent-browser = "f=~/dev/firstmate/config/agent-browser-workforce-monorepo.json; [ ! -f $f ] || cp $f agent-browser.json"

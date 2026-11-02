@@ -29,14 +29,19 @@ set -gx FZF_DEFAULT_OPTS "\
 
 # PATH
 
-set -x fish_user_paths
-fish_add_path -g $HOME/.local/bin
-fish_add_path -g $HOME/.cargo/bin # cargo/rust
-fish_add_path -g $BUN_INSTALL/bin # bun
-fish_add_path -g $HOME/.config/composer/vendor/bin # composer/php
-fish_add_path -g $HOME/go/bin # go
-fish_add_path -g $PNPM_HOME $PNPM_HOME/bin # pnpm
-fish_add_path -g $HOME/.lando/bin # lando
+# Nix's profile (conf.d/nix.fish) owns the development tools and the system
+# comes next, so these user-level install dirs go last: they only add tools
+# neither provides (uv tools, bun globals, cargo/go builds). fish_user_paths
+# would put them in front of everything, so it stays empty.
+set -gx fish_user_paths
+fish_add_path --path --append \
+    $HOME/.local/bin \
+    $HOME/.cargo/bin \
+    $BUN_INSTALL/bin \
+    $HOME/.config/composer/vendor/bin \
+    $HOME/go/bin \
+    $PNPM_HOME $PNPM_HOME/bin \
+    $HOME/.lando/bin
 
 # Source local environment file if it exists
 # if test -f ~/.local/bin/env

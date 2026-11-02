@@ -1,0 +1,4 @@
+# Match neovim's kanagawa (wave) colorscheme; see themes/kanagawa-wave.toml.
+theme = "kanagawa-wave"
+# Let the terminal background show through; only diff/selection rows paint.
+transparent_background = true

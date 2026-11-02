@@ -1,0 +1,56 @@
+# Kanagawa Wave for tuicr, mapped from kanagawa.nvim's palette and highlight
+# groups (https://github.com/rebelot/kanagawa.nvim, MIT) so reviews match nvim.
+# panel_bg only paints when transparent_background = false.
+panel_bg = "#1F1F28"           # sumiInk3, Normal bg
+bg_highlight = "#223249"       # waveBlue1, Visual
+fg_primary = "#DCD7BA"         # fujiWhite, Normal fg
+fg_secondary = "#C8C093"       # oldWhite
+fg_dim = "#727169"             # fujiGray, Comment
+
+# DiffAdd/DiffDelete backgrounds with gitsigns' vcs foregrounds.
+diff_add = "#76946A"           # autumnGreen
+diff_add_bg = "#2B3328"        # winterGreen
+diff_del = "#C34043"           # autumnRed
+diff_del_bg = "#43242B"        # winterRed
+diff_context = "#DCD7BA"
+diff_hunk_header = "#938AA9"   # springViolet1
+expanded_context_fg = "#727169"
+
+syntax_add_bg = "#2B3328"
+syntax_del_bg = "#43242B"
+syntax_theme = "kanagawa-wave.tmTheme"
+
+file_added = "#76946A"
+file_modified = "#DCA561"      # autumnYellow
+file_deleted = "#C34043"
+file_renamed = "#957FB8"       # oniViolet
+
+reviewed = "#98BB6C"           # springGreen
+pending = "#DCA561"
+
+# Diagnostic colors: info, hint, error.
+comment_note = "#658594"       # dragonBlue
+comment_suggestion = "#6A9589" # waveAqua1
+comment_issue = "#E82424"      # samuraiRed
+comment_praise = "#98BB6C"
+
+border_focused = "#7E9CD8"     # crystalBlue
+border_unfocused = "#54546D"   # sumiInk6
+status_bar_bg = "#16161D"      # sumiInk0, StatusLine
+cursor_color = "#C8C093"
+cursor_line_bg = "#363646"     # sumiInk5, CursorLine
+branch_name = "#957FB8"
+help_indicator = "#727169"
+
+message_info_fg = "#16161D"
+message_info_bg = "#658594"
+message_warning_fg = "#16161D"
+message_warning_bg = "#FF9E3B" # roninYellow
+message_error_fg = "#16161D"
+message_error_bg = "#E82424"
+update_badge_fg = "#16161D"
+update_badge_bg = "#DCA561"
+
+# lualine's kanagawa normal-mode section.
+mode_fg = "#16161D"
+mode_bg = "#7E9CD8"

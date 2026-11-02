@@ -133,6 +133,14 @@ type = "plugin_action"
 command = "workspace-pickr.open"
 description = "find project: focus or open a workspace"
 
+# herdr-bar: navigate existing workspaces, tabs, agents, and panes.
+# Worktree creation stays with worktrunk; PR/MR links stay with pickr.
+[[keys.command]]
+key = "prefix+space"
+type = "plugin_action"
+command = "herdr-bar.open"
+description = "herdr-bar: navigate sessions"
+
 # herdr-worktrunk (devashish2203/herdr-worktrunk): worktrees through worktrunk
 # (`wt`), so the repo's setup/teardown hooks run. prefix+shift+g replaces herdr's
 # own new_worktree, which has no hooks, so there's one way to create a worktree.

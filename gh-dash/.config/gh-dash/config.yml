@@ -4,12 +4,23 @@
 prSections:
   - title: My Pull Requests
     filters: is:open author:@me
+  # Drops out once someone approves it, it merges or closes, or I review it.
   - title: Needs My Review
-    filters: is:open draft:false review-requested:@me
+    filters: is:open draft:false review-requested:@me -review:approved
   - title: Assigned
     filters: is:open draft:false assignee:@me
+  # Two weeks without activity means it no longer needs me.
   - title: Involved
-    filters: is:open draft:false involves:@me -author:@me
+    filters: >-
+      is:open draft:false involves:@me -author:@me
+      updated:>={{ nowModify "-2w" }}
+  - title: Recently Merged
+    filters: >-
+      is:merged author:@me
+      merged:>={{ nowModify "-1w" }}
+    layout:
+      ci:
+        hidden: true
   # workforce-monorepo PRs ready to merge: green CI plus either the robot label or an
   # approving review. gh-dash's search API ignores OR/parentheses (dlvhdr/gh-dash#955),
   # so the two paths are separate tabs; the approved tab drops robot-labeled PRs to dedupe.
@@ -18,13 +29,41 @@ prSections:
   - title: Mergeable (approved)
     filters: repo:EBSCO-Nexus/workforce-monorepo is:open draft:false status:success review:approved -label:robot-says-merge
 
-# `t` shadows gh-dash's smart-filtering toggle (v4.26). tuicr fetches the PR
-# through `gh`, so `t` needs no local clone or repoPaths entry; `:submit` inside
+# The GitHub notifications inbox. Opening one marks it read and it drops out.
+notificationsSections:
+  - title: New Activity
+    filters: is:unread reason:author reason:comment reason:mention
+  - title: Participating
+    filters: reason:participating
+  - title: Review Requested
+    filters: reason:review-requested
+  - title: Mentioned
+    filters: reason:mention reason:team-mention
+includeReadNotifications: false
+
+defaults:
+  view: prs
+  refetchIntervalMinutes: 5
+  preview:
+    open: true
+    width: 0.5
+
+pager:
+  diff: delta
+
+# `T` reviews in tuicr; lowercase `t` stays gh-dash's smart-filtering toggle,
+# which scopes the lists to the repo gh-dash was started in (unbound in v4.26).
+# tuicr fetches the PR through `gh`, so it needs no local clone or repoPaths entry; `:submit` inside
 # tuicr posts the review back to GitHub. Agent-authored changes use Hunk's
 # on-demand Herdr actions rather than the archived custom PR worktree flow.
 keybindings:
+  # g is firstLine, so lazygit goes on ctrl+g.
+  universal:
+    - key: ctrl+g
+      name: lazygit
+      command: cd {{.RepoPath}} && lazygit
   prs:
-    - key: t
+    - key: T
       name: review in tuicr
       command: tuicr pr https://github.com/{{.RepoName}}/pull/{{.PrNumber}}
     # gh-dash has no reviewer action; `E` is unbound in v4.26.1's keymap.

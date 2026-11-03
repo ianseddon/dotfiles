@@ -203,10 +203,14 @@ jq '.cpa = {type: "api_key", key: "!fish -c '\''agent-secret CLIPROXYAPI_API_KEY
   && install -m 600 /tmp/auth.json ~/.pi/agent/auth.json && rm /tmp/auth.json
 ```
 
-SSH keys live in Proton Pass, vault `SSH`, and only the desktop serves them: `proton-pass-agent.service` runs `pass-cli ssh-agent` on `$XDG_RUNTIME_DIR/proton-pass-agent.sock`, and `~/.ssh/config` (not tracked) points `IdentityAgent` there and names each host's key by its `.pub` file with `IdentitiesOnly yes`. New or rotated keys appear within 30 seconds of being saved to the vault. The CLI is never signed in on M75q, where agents run unattended. Keys must be stored without a passphrase (the vault encrypts them); the agent skips passphrase-protected ones. Setting up a machine:
+SSH keys live in Proton Pass, vault `SSH`, and only the desktop serves them: `proton-pass-agent.service` runs `pass-cli ssh-agent` on `$XDG_RUNTIME_DIR/proton-pass-agent.sock`, and `~/.ssh/config` (not tracked) points `IdentityAgent` there and names each host's key by its `.pub` file with `IdentitiesOnly yes`. New or rotated keys appear within 30 seconds of being saved to the vault. The CLI is never signed in on M75q, where agents run unattended. Keys must be stored without a passphrase (the vault encrypts them); the agent skips passphrase-protected ones. The CLI signs in with a personal access token that can only view the `SSH` vault, not the whole account, so the session stored on the desktop can't read the other vaults. Tokens last at most a year: renew with `pass-cli personal-access-token renew` (from a full `pass-cli login`, then switch back). New keys are added in the Proton Pass app. Setting up a machine:
 
 ```bash
-pass-cli login
+pass-cli login    # full account, once, to create the token
+pass-cli personal-access-token create --name <machine>-ssh-agent --expiration 1y
+pass-cli personal-access-token access grant --personal-access-token-name <machine>-ssh-agent --vault-name SSH --role viewer
+pass-cli logout
+read -s -P 'token: ' pat; pass-cli login --pat $pat; set -e pat
 stow --no-folding --target="$HOME" proton-pass
 systemctl --user enable --now proton-pass-agent.service
 ```

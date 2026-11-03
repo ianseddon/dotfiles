@@ -1,0 +1,11 @@
+# Only the settings that differ from atuin's defaults.
+# Nix updates atuin, so its own update check is noise.
+update_check = false
+# Enter runs the selected command; tab puts it on the command line to edit.
+enter_accept = true
+style = "compact"
+inline_height = 20
+# Search everything by default; ctrl-r inside the search cycles to this
+# session, directory, host or workspace (git repository).
+filter_mode = "global"
+workspaces = true

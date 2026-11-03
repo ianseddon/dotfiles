@@ -47,38 +47,17 @@ fish_add_path --path --append \
 #     source ~/.local/bin/env
 # end
 
-# Enable vi key bindings
-fish_vi_key_bindings
+# Vi key bindings, keeping emacs keys (ctrl-a/e/w, alt-f/b, ...) where vi
+# doesn't bind them. Additions are in fish_user_key_bindings.
+set -g fish_key_bindings fish_hybrid_key_bindings
 
-# zoxide init comes from the icezyclon/zoxide.fish plugin
+# Ghostty's cursor-shape integration stands down under vi bindings, so fish
+# sets the shape per mode: a line while inserting, a block otherwise.
+set -g fish_cursor_default block
+set -g fish_cursor_insert line
+set -g fish_cursor_replace_one underscore
+set -g fish_cursor_replace underscore
+set -g fish_cursor_visual block
+set -g fish_cursor_external block blink
 
-# No [I]/[N] vi-mode marker before the prompt (starship's init used to hide it)
-function fish_mode_prompt
-end
-
-function fish_prompt
-    set -l last_status $status
-    set -l pwd_info (pwd | string replace $HOME '~')
-
-    # Git info
-    set -l git_branch (git branch 2>/dev/null | grep '^\*' | cut -d' ' -f2)
-    set -l git_info ''
-    if test -n "$git_branch"
-        set git_info " ($git_branch)"
-    end
-
-    # Status indicator
-    set -l status_indicator ''
-    if test $last_status -ne 0
-        set status_indicator (set_color red)"✗ "
-    end
-
-    # Kanagawa (kanagawa.nvim): waveAqua2 directory, carpYellow branch, springGreen
-    # prompt; red is ANSI red, which Ghostty's Kanagawa Wave palette draws as autumnRed.
-    printf '%s%s%s%s%s ' \
-        (set_color 7AA89F)$pwd_info \
-        (set_color E6C384)$git_info \
-        (set_color normal) \
-        $status_indicator \
-        (set_color 98BB6C)'❯'(set_color normal)
-end
+# The prompt is Tide (conf.d/tide.fish).

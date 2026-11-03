@@ -17,7 +17,9 @@ adjust-cell-height = 25%
 
 # Shell settings
 shell-integration = fish
-shell-integration-features = cursor,sudo,title
+# ssh-env and ssh-terminfo: `ssh` forwards COLORTERM and installs Ghostty's
+# terminfo on the host, so colours and cursor shapes work there.
+shell-integration-features = cursor,sudo,title,ssh-env,ssh-terminfo
 
 # Performance
 auto-update = check

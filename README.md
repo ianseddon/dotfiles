@@ -15,7 +15,8 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 |---|---|---|---|
 | `nix` | The flake and its fish/session PATH integration | ✓ | ✓ |
 | `m75q` | Rootless Docker and herdr server units, `DOCKER_HOST` | | ✓ |
-| `fish` | Shell config, functions, plugins | ✓ | ✓ |
+| `fish` | Shell config and functions; the Tide prompt's settings (`conf.d/tide.fish`) | ✓ | ✓ |
+| `atuin`, `direnv` | Shell history search; per-directory environments (nix-direnv) | ✓ | ✓ |
 | `git`, `gh`, `gh-dash`, `lazygit`, `bat`, `fd`, `nvim` | CLI tool config | ✓ | ✓ |
 | `agents` | `~/AGENTS.md`, shared skills, `nexus-skills` | ✓ | ✓ |
 | `pi`, `claude` | pi and Claude Code settings | ✓ | ✓ |
@@ -26,6 +27,8 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 `ly` and `pam` are system files, installed into `/etc` by hand rather than stowed; `i3` is the retired X11 session, kept for reference.
 
 Packages whose app writes its own state next to the config are stowed with `--no-folding`, so only the tracked files are links and the directory stays real. `agents` and `gh` are stowed without it: their directories are links on purpose.
+
+fish's universal variables (`~/.config/fish/fish_variables`) stay out of the repository: Tide and sponge rewrite them all the time. Settings belong in `conf.d` as globals instead. Fish plugins (Tide, fzf.fish, done, sponge) come from Nix's `fishPlugins`, not fisher.
 
 ## Nix
 
@@ -60,7 +63,7 @@ git config filter.pi-settings.clean "jq --indent 2 'del(.deviceId, .lastChangelo
 git config filter.pi-settings.smudge cat
 
 mkdir -p ~/.config/{worktrunk,herdr,hunk,pi} ~/.pi/agent ~/.claude
-stow --no-folding --target="$HOME" nix fish git gh-dash lazygit bat fd nvim pi claude herdr worktrunk hunk
+stow --no-folding --target="$HOME" nix fish atuin direnv git gh-dash lazygit bat fd nvim pi claude herdr worktrunk hunk
 stow --target="$HOME" agents gh tuicr
 fnm install 24 && fnm default 24
 ```

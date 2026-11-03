@@ -14,6 +14,15 @@ if test -d $nix_share/fish/vendor_completions.d
     contains -- $nix_share/fish/vendor_completions.d $fish_complete_path
     or set -g fish_complete_path $fish_complete_path[1] $nix_share/fish/vendor_completions.d $fish_complete_path[2..]
 end
+# Plugins in the profile (Tide, fzf.fish, done, sponge, direnv's hook) live in
+# share/fish/vendor_{functions,conf}.d, which fish also only finds through
+# XDG_DATA_DIRS at startup. When it missed them, load them now.
+if test -d $nix_share/fish/vendor_conf.d; and not contains -- $nix_share/fish/vendor_conf.d $__fish_vendor_confdirs
+    set -g fish_function_path $fish_function_path[1] $nix_share/fish/vendor_functions.d $fish_function_path[2..]
+    for f in $nix_share/fish/vendor_conf.d/*.fish
+        source $f
+    end
+end
 if not contains -- $nix_share (string split : -- "$XDG_DATA_DIRS")
     set -gx XDG_DATA_DIRS $nix_share (string split -n : -- "$XDG_DATA_DIRS"; or printf '%s\n' /usr/local/share /usr/share)
     set -gx XDG_DATA_DIRS (string join : $XDG_DATA_DIRS)

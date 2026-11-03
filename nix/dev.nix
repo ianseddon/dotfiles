@@ -78,6 +78,18 @@ with pkgs; [
   basedpyright
 
   fish
+  # Plugins load from the profile's share/fish (nix/.config/fish/conf.d/nix.fish).
+  fishPlugins.tide
+  fishPlugins.fzf-fish
+  # Desktop notification when a long command finishes.
+  fishPlugins.done
+  # Drops failed commands from history, so autosuggestions skip typos.
+  fishPlugins.sponge
+  # Shell history in SQLite with directory, exit code, duration and host.
+  atuin
+  # Per-directory environments; nix-direnv caches `use flake`.
+  direnv
+  nix-direnv
   herdr
   # The herdr plugins' pickers (herdr/.local/share/herdr-plugins, herdr-worktrunk)
   # are fzf; workspace-pickr also lists zoxide's top repos.

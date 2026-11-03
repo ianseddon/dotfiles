@@ -1,0 +1,15 @@
+[Unit]
+Description=Proton Pass SSH agent (keys from the SSH vault)
+Documentation=https://protonpass.github.io/pass-cli/commands/ssh-agent/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Serves the SSH vault's keys; nothing is written to ~/.ssh. Needs a
+# `pass-cli login` session on this machine (desktop only, see nix/hosts/desktop.nix).
+ExecStart=%h/.nix-profile/bin/pass-cli ssh-agent start --vault-name SSH --socket-path %t/proton-pass-agent.sock
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

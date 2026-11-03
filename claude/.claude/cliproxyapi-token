@@ -1,0 +1,3 @@
+#!/bin/sh
+# Keep the CLIProxyAPI client key outside the tracked Claude Code settings.
+exec cat "$HOME/.config/cliproxyapi/api-key"

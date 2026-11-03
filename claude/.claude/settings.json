@@ -1,5 +1,9 @@
 {
   "model": "opus",
+  "apiKeyHelper": "~/.claude/cliproxyapi-token",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://cliproxyapi.ians.cloud"
+  },
   "extraKnownMarketplaces": {
     "wakatime": {
       "source": {

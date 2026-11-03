@@ -5,7 +5,8 @@
   "packages": [
     "npm:@gotgenes/pi-anthropic-auth",
     "npm:pi-wakatime",
-    "npm:pi-web-access"
+    "npm:pi-web-access",
+    "npm:@hank-warren/pi-cliproxyapi-provider"
   ],
   "defaultTools": [
     "+codemode"

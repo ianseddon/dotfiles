@@ -1,7 +1,13 @@
 {
-  "defaultProvider": "anthropic",
+  "defaultProvider": "cpa",
   "defaultModel": "claude-opus-5-5",
   "defaultThinkingLevel": "high",
+  "enabledModels": [
+    "cpa/claude-opus-5-5",
+    "cpa/kimi-k3.1-pro",
+    "cpa/opencode-go/kimi-k3.1-pro",
+    "cpa/gpt-6.1-sol"
+  ],
   "packages": [
     "npm:@gotgenes/pi-anthropic-auth",
     "npm:pi-wakatime",

@@ -109,7 +109,7 @@ pi, Claude Code, and codex all run from the Nix profile; their self-updaters don
 
 - **Instructions:** `~/AGENTS.md` (from `agents/AGENTS.md`).
 - **Skills:** `~/.agents/skills` is `agents/.agents/skills`. Skills a Nix package ships (herdr, Hunk, worktrunk, gh-stack) are links into `~/.nix-profile/share/skills`, so they move with the package; the rest are copies, and `agents/.agents/.skill-lock.json` records where they came from.
-- **pi:** `pi/.pi/agent/settings.json` holds the shared settings and packages (`pi update --extensions` installs them). `pi-web-access` reads `web-search.json` from `~/.config/pi` when `XDG_CONFIG_HOME` is set and from `~/.pi/agent` when it isn't, so the file is linked into both. It routes `web_search` through Kagi (v1 API, funded balance), then keyless Exa, and reads `$KAGI_API_KEY` from the environment. The default provider is `cpa`, the self-hosted [CLIProxyAPI](https://cliproxyapi.ians.cloud) (`@hank-warren/pi-cliproxyapi-provider`, configured in `pi-cliproxyapi-provider/config.json`); `extensions/cliproxyapi-kimi.ts` adapts Kimi's message roles to it.
+- **pi:** `pi/.pi/agent/settings.json` holds the shared settings and packages (`pi update --extensions` installs them). `pi-web-access` reads `web-search.json` from `~/.config/pi` when `XDG_CONFIG_HOME` is set and from `~/.pi/agent` when it isn't, so the file is linked into both. It routes `web_search` through Kagi (v1 API, funded balance), then keyless Exa, and reads `$KAGI_API_KEY` from the environment. The default provider is `cpa`, the self-hosted [CLIProxyAPI](https://cliproxyapi.ians.cloud) (`@hank-warren/pi-cliproxyapi-provider`, configured in `pi-cliproxyapi-provider/config.json`); `extensions/cliproxyapi-kimi.ts` adapts Kimi's message roles to it. Project-local `.pi` files are trusted without asking (`defaultProjectTrust: "always"`), so new worktrees don't stop firstmate workers at a trust prompt; install telemetry is off; and `pi update` refuses to self-update, pointing at the pinned tag in `nix/flake.nix` instead. `@nicknisi/pi-session-name` names each session from its first prompt (`configs/session-name.json`), `keybindings.json` adds alt+m for the model picker because herdr's navigation takes ctrl+l, and on the M75q `PI_CLIPBOARD_OSC52` sends pi's copies to the attached desktop.
 - **Claude Code:** `claude/.claude/settings.json`, including the plugin marketplaces it installs from. It talks to CLIProxyAPI (`ANTHROPIC_BASE_URL`), and its `apiKeyHelper` fetches the key from Infisical (see [Secrets](#secrets)). Auto memory is off (`autoMemoryEnabled: false`), so durable notes belong in this repository or a project's `AGENTS.md`, not in `~/.claude/projects/*/memory`.
 - **codex:** its `config.toml` is machine state (project trust, hook hashes), so it isn't tracked; add its plugins with `codex plugin add`.
 
@@ -161,7 +161,11 @@ herdr plugin install -y --ref v0.5.0 jhochenbaum/herdr-hunk-diff
 for p in ~/dotfiles/herdr/.local/share/herdr-plugins/*/; do herdr plugin link "$p"; done
 # Once: git-status's startup hook only restarts a poller that was running before.
 herdr plugin action invoke start --plugin git-status
+# pi reports its own state to herdr, and herdr reopens pi sessions after a restart.
+herdr integration install pi
 ```
+
+Notifications go through the terminal (`[ui.toast] delivery = "terminal"`), so Ghostty raises them for local and remote workspaces alike.
 
 ### Phone and browser: Ovis (M75q)
 

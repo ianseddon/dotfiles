@@ -221,4 +221,6 @@ rows = [
 ]
 
 [ui.toast]
-delivery = "system"
+# The outer terminal (Ghostty) raises the notification, which also works when
+# the desktop is attached to m75q's herdr.
+delivery = "terminal"

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://pi.dev/schemas/settings.schema.json",
   "defaultProvider": "cpa",
   "defaultModel": "claude-opus-5-5",
   "defaultThinkingLevel": "high",
@@ -11,7 +12,8 @@
   "packages": [
     "npm:pi-wakatime",
     "npm:pi-web-access",
-    "npm:@hank-warren/pi-cliproxyapi-provider"
+    "npm:@hank-warren/pi-cliproxyapi-provider",
+    "npm:@nicknisi/pi-session-name"
   ],
   "defaultTools": [
     "+codemode"
@@ -19,5 +21,14 @@
   "warnings": {
     "anthropicExtraUsage": false
   },
-  "hideThinkingBlock": true
+  "hideThinkingBlock": true,
+  "defaultProjectTrust": "always",
+  "enableInstallTelemetry": false,
+  "collapseChangelog": true,
+  "quietStartup": "header",
+  "selfUpdateCommand": [
+    "sh",
+    "-c",
+    "echo \"pi comes from Nix: bump inputs.pi.url in ~/dotfiles/nix/flake.nix to v{version}\" >&2; exit 1"
+  ]
 }

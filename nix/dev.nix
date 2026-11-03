@@ -60,6 +60,8 @@ with pkgs; [
   ast-grep
   bat
   eza
+  # Markdown in the terminal.
+  glow
   btop
   awscli2
   ssm-session-manager-plugin
@@ -71,6 +73,9 @@ with pkgs; [
   shellcheck
   shfmt
   actionlint
+  # Python, for projects that don't pin their own (uv runs those).
+  ruff
+  basedpyright
 
   fish
   herdr

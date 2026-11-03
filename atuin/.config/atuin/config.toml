@@ -9,3 +9,9 @@ inline_height = 20
 # session, directory, host or workspace (git repository).
 filter_mode = "global"
 workspaces = true
+
+# Self-hosted sync server (~/dev/homelab services/atuin). Syncs once a machine
+# has signed in (`atuin login`); history is encrypted before upload.
+sync_address = "https://atuin.ians.cloud"
+auto_sync = true
+sync_frequency = "5m"

@@ -22,6 +22,7 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 | `pi`, `claude` | pi and Claude Code settings | ✓ | ✓ |
 | `herdr`, `worktrunk`, `hunk`, `tuicr` | Workspaces, worktrees, and review | ✓ | ✓ |
 | `hyprland`, `waybar`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
+| `proton-pass` | SSH agent serving keys from Proton Pass | ✓ | |
 | `commitizen` | Commit message conventions | ✓ | ✓ |
 
 `ly` and `pam` are system files, installed into `/etc` by hand rather than stowed; `i3` is the retired X11 session, kept for reference.
@@ -200,6 +201,14 @@ Tools that ask for their key on each request use `agent-secret <NAME>`, which pr
 ```bash
 jq '.cpa = {type: "api_key", key: "!fish -c '\''agent-secret CLIPROXYAPI_API_KEY'\''"}' ~/.pi/agent/auth.json > /tmp/auth.json \
   && install -m 600 /tmp/auth.json ~/.pi/agent/auth.json && rm /tmp/auth.json
+```
+
+SSH keys live in Proton Pass, vault `SSH`, and only the desktop serves them: `proton-pass-agent.service` runs `pass-cli ssh-agent` on `$XDG_RUNTIME_DIR/proton-pass-agent.sock`, and `~/.ssh/config` (not tracked) points `IdentityAgent` there and names each host's key by its `.pub` file with `IdentitiesOnly yes`. New or rotated keys appear within 30 seconds of being saved to the vault. The CLI is never signed in on M75q, where agents run unattended. Keys must be stored without a passphrase (the vault encrypts them); the agent skips passphrase-protected ones. Setting up a machine:
+
+```bash
+pass-cli login
+stow --no-folding --target="$HOME" proton-pass
+systemctl --user enable --now proton-pass-agent.service
 ```
 
 OAuth logins stay with each tool on each machine (pi's `/login`, `claude`, `codex login`), because the tools refresh and rewrite those tokens themselves. The AWS CLI's configuration stays out too, since `~/.aws/config` names account IDs and SSO URLs: copy it between machines (mode 0600) and sign in on the headless host with a device code:

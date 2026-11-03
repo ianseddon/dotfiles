@@ -5,7 +5,8 @@
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Environment-variables/
 
 -- SSH
-hl.env("SSH_AUTH_SOCK", os.getenv("XDG_RUNTIME_DIR") .. "/ssh-agent.socket")
+-- Proton Pass serves the SSH keys (proton-pass/, vault "SSH").
+hl.env("SSH_AUTH_SOCK", os.getenv("XDG_RUNTIME_DIR") .. "/proton-pass-agent.sock")
 
 -- Cursor size
 hl.env("XCURSOR_SIZE", "24")

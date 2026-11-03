@@ -1,8 +1,11 @@
 {
-  "model": "opus",
-  "apiKeyHelper": "~/.claude/cliproxyapi-token",
+  "apiKeyHelper": "fish -c 'agent-secret CLIPROXYAPI_API_KEY'",
   "env": {
     "ANTHROPIC_BASE_URL": "https://cliproxyapi.ians.cloud"
+  },
+  "model": "opus",
+  "enabledPlugins": {
+    "claude-code-wakatime@wakatime": true
   },
   "extraKnownMarketplaces": {
     "wakatime": {
@@ -13,10 +16,7 @@
     }
   },
   "tui": "fullscreen",
+  "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
-  "theme": "auto",
-  "enabledPlugins": {
-    "claude-code-wakatime@wakatime": true
-  },
-  "autoMemoryEnabled": false
+  "theme": "auto"
 }

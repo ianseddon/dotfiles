@@ -109,8 +109,8 @@ pi, Claude Code, and codex all run from the Nix profile; their self-updaters don
 
 - **Instructions:** `~/AGENTS.md` (from `agents/AGENTS.md`).
 - **Skills:** `~/.agents/skills` is `agents/.agents/skills`. Skills a Nix package ships (herdr, Hunk, worktrunk, gh-stack) are links into `~/.nix-profile/share/skills`, so they move with the package; the rest are copies, and `agents/.agents/.skill-lock.json` records where they came from.
-- **pi:** `pi/.pi/agent/settings.json` holds the shared settings and packages (`pi update --extensions` installs them). `pi-web-access` reads `web-search.json` from `~/.config/pi` when `XDG_CONFIG_HOME` is set and from `~/.pi/agent` when it isn't, so the file is linked into both. It routes `web_search` through Kagi (v1 API, funded balance), then keyless Exa, and reads `$KAGI_API_KEY` from the environment.
-- **Claude Code:** `claude/.claude/settings.json`, including the plugin marketplaces it installs from. Auto memory is off (`autoMemoryEnabled: false`), so durable notes belong in this repository or a project's `AGENTS.md`, not in `~/.claude/projects/*/memory`.
+- **pi:** `pi/.pi/agent/settings.json` holds the shared settings and packages (`pi update --extensions` installs them). `pi-web-access` reads `web-search.json` from `~/.config/pi` when `XDG_CONFIG_HOME` is set and from `~/.pi/agent` when it isn't, so the file is linked into both. It routes `web_search` through Kagi (v1 API, funded balance), then keyless Exa, and reads `$KAGI_API_KEY` from the environment. The default provider is `cpa`, the self-hosted [CLIProxyAPI](https://cliproxyapi.ians.cloud) (`@hank-warren/pi-cliproxyapi-provider`, configured in `pi-cliproxyapi-provider/config.json`); `extensions/cliproxyapi-kimi.ts` adapts Kimi's message roles to it.
+- **Claude Code:** `claude/.claude/settings.json`, including the plugin marketplaces it installs from. It talks to CLIProxyAPI (`ANTHROPIC_BASE_URL`), and its `apiKeyHelper` fetches the key from Infisical (see [Secrets](#secrets)). Auto memory is off (`autoMemoryEnabled: false`), so durable notes belong in this repository or a project's `AGENTS.md`, not in `~/.claude/projects/*/memory`.
 - **codex:** its `config.toml` is machine state (project trust, hook hashes), so it isn't tracked; add its plugins with `codex plugin add`.
 
 ### Nexus-only skills
@@ -180,13 +180,20 @@ Open `https://m75q.hawk-monster.ts.net` on the phone, install it, then **Setting
 
 ## Secrets
 
-None are in this repository. The agents' API keys (`KAGI_API_KEY`, `OPENCODE_API_KEY`) live in the `agents` project of the self-hosted [Infisical](https://infisical.ians.cloud), environment `prod`. Each machine reads it as its own Universal Auth machine identity (`desktop`, `m75q`) with the project's Viewer role, so either can be revoked alone.
+None are in this repository. The agents' API keys (`KAGI_API_KEY`, `OPENCODE_API_KEY`, `CLIPROXYAPI_API_KEY`) live in the `agents` project of the self-hosted [Infisical](https://infisical.ians.cloud), environment `prod`. Each machine reads it as its own Universal Auth machine identity (`desktop`, `m75q`) with the project's Viewer role, so either can be revoked alone.
 
 ```bash
 agent-secrets-login    # once per machine: project ID, client ID, client secret
 ```
 
 That writes `~/.config/infisical/agents.env` (mode 0600), the machine's one local secret. `with-agent-secrets <command>` signs in with it, caches Infisical's token on tmpfs for an hour, and starts the command with the project's secrets added to its environment; Infisical's token itself never reaches the command. The `pi` fish function runs pi that way. To add a key, add it to the project; nothing here changes.
+
+Tools that ask for their key on each request use `agent-secret <NAME>`, which prints one key; the project's values are kept on tmpfs for five minutes so that isn't an Infisical call every time. Claude Code's `apiKeyHelper` is `fish -c 'agent-secret CLIPROXYAPI_API_KEY'`. pi's `auth.json` isn't tracked, so set its `cpa` key once per machine; this also covers pi started without the fish function, such as firstmate's workers:
+
+```bash
+jq '.cpa = {type: "api_key", key: "!fish -c '\''agent-secret CLIPROXYAPI_API_KEY'\''"}' ~/.pi/agent/auth.json > /tmp/auth.json \
+  && install -m 600 /tmp/auth.json ~/.pi/agent/auth.json && rm /tmp/auth.json
+```
 
 OAuth logins stay with each tool on each machine (pi's `/login`, `claude`, `codex login`), because the tools refresh and rewrite those tokens themselves. The AWS CLI's configuration stays out too, since `~/.aws/config` names account IDs and SSO URLs: copy it between machines (mode 0600) and sign in on the headless host with a device code:
 

@@ -1,0 +1,11 @@
+{
+  "providerName": "cpa",
+  "baseUrl": "https://cliproxyapi.ians.cloud/v1",
+  "authRequired": true,
+  "authHeader": true,
+  "headers": {},
+  "modelsDevEnabled": true,
+  "metadataFallbackProvider": "openrouter",
+  "modelAliases": {},
+  "modelOverrides": {}
+}

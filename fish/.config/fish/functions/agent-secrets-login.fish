@@ -12,6 +12,7 @@ function agent-secrets-login --description "Store this machine's Infisical ident
         "INFISICAL_PROJECT_ID=$project" \
         "INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=$id" \
         "INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=$secret" >$conf
-    rm -f (_agent_secrets_token_file)
+    set -l cache (_agent_secrets_token_file)
+    rm -f $cache $cache.values
     echo "Saved $conf"
 end

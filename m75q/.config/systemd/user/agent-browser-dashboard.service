@@ -1,0 +1,16 @@
+[Unit]
+Description=Agent Browser dashboard (Tailscale-only)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+# `dashboard start` daemonizes. It serves 127.0.0.1:4848, published on the
+# tailnet as svc:agent-browser (README); proxied access needs the token link
+# it logs (`journalctl --user -u agent-browser-dashboard -n 20`).
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=%h/.nix-profile/bin/agent-browser dashboard start --allowed-origins https://agent-browser.hawk-monster.ts.net,https://m75q.hawk-monster.ts.net:4848
+ExecStop=%h/.nix-profile/bin/agent-browser dashboard stop
+
+[Install]
+WantedBy=default.target

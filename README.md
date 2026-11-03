@@ -3,7 +3,7 @@
 Dotfiles for two Arch machines, deployed with [GNU Stow](https://www.gnu.org/software/stow/):
 
 - **Desktop:** the Hyprland workstation. `XDG_CONFIG_HOME` is set (uwsm).
-- **M75q:** the headless development host on the tailnet, reached over Tailscale SSH and herdr. `XDG_CONFIG_HOME` is unset.
+- **M75q:** the headless development host on the tailnet, reached over Tailscale SSH and herdr. `XDG_CONFIG_HOME` is unset. It is a tagged Tailscale node (`tag:server`), so it has no personal owner: the tailnet policy has to let your devices reach `tag:server`.
 
 Both run the same development tools from one Nix flake and the same agent, review, and shell config from the Stow packages here. What only one machine needs is in its own place: `nix/hosts/<name>.nix` for packages, the `m75q` package for the M75q's units.
 
@@ -173,18 +173,30 @@ Notifications go through the terminal (`[ui.toast] delivery = "terminal"`), so G
 
 ### Phone and browser: Ovis (M75q)
 
-[Ovis](https://github.com/devswha/ovis) (formerly herdr web UI) runs where the agents do: it shows herdr's layout, each agent's transcript as a chat beside the live terminal, and sends push alerts when an agent needs input or finishes. Requests from this host's own Tailscale login get in; any other device needs a pairing code.
+[Ovis](https://github.com/devswha/ovis) (formerly herdr web UI) runs where the agents do: it shows herdr's layout, each agent's transcript as a chat beside the live terminal, and sends push alerts when an agent needs input or finishes. Requests from `OVIS_TAILSCALE_OWNER`'s devices get in; anything else, including the tagged host itself, needs a pairing code. A tagged node has no owner of its own to compare against, so the owner has to be named.
 
 ```bash
 herdr plugin install devswha/ovis --yes
 cfg=$(herdr plugin config-dir devswha.ovis); mkdir -p "$cfg"
 printf '%s\n' OVIS_TELEMETRY=0 OVIS_APP_NAME=M75q \
-  OVIS_PUSH_SUBJECT=mailto:ianseddon55@gmail.com > "$cfg/env"; chmod 600 "$cfg/env"
+  OVIS_PUSH_SUBJECT=mailto:ianseddon55@gmail.com \
+  OVIS_TAILSCALE_OWNER=ianseddon55@gmail.com > "$cfg/env"; chmod 600 "$cfg/env"
 herdr plugin action invoke devswha.ovis.start   # also starts with herdr from now on
 tailscale serve --bg --https=443 http://127.0.0.1:7317
 ```
 
-Open `https://m75q.hawk-monster.ts.net` on the phone, install it, then **Settings → Alerts → Send test**. HTTPS is required for install and push, Tailscale's operator must be this user (`sudo tailscale set --operator=$USER`) for `tailscale serve` to run unprivileged, and renaming the host changes the origin, so phones subscribe again. State (push keys, subscriptions, updates) is in `~/.config/ovis`; new releases come through **Settings → Updates**. Collie, used before it, is removed from both machines.
+Open `https://m75q.hawk-monster.ts.net` on the phone, install it, then **Settings → Alerts → Send test**. HTTPS is required for install and push, Tailscale's operator must be this user (`sudo tailscale set --operator=$USER`) for `tailscale serve` to run unprivileged, and renaming the host changes the origin, so phones subscribe again. State (push keys, subscriptions, updates) is in `~/.config/ovis`; new releases come through **Settings → Updates**. Collie, used before it, is removed from both machines. If the page returns 502, the Ovis server has stopped: run the `start` action again.
+
+### Browser dashboard: agent-browser (M75q)
+
+agent-browser's dashboard (live view of the agents' browser sessions) runs as `agent-browser-dashboard.service` on `127.0.0.1:4848` and is published as its own Tailscale Service, because it has no base-path support and can't live under a path of the root host:
+
+```bash
+systemctl --user enable --now agent-browser-dashboard.service
+tailscale serve --service=svc:agent-browser --https=443 http://127.0.0.1:4848
+```
+
+Open `https://agent-browser.hawk-monster.ts.net` (`https://m75q.hawk-monster.ts.net:4848` also still works). Through a proxy it always asks for its token link, which changes on every restart: `journalctl --user -u agent-browser-dashboard -n 20`. Test-account logins for its sessions live in agent-browser's own vault (`agent-browser auth save <name> ... --password-stdin`), not in this repository.
 
 ## Secrets
 

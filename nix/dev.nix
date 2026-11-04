@@ -96,6 +96,9 @@ with pkgs; [
   fzf
   zoxide
   neovim
+  # nvim-treesitter (main) compiles its parsers with `tree-sitter build`
+  # and the gcc below.
+  tree-sitter
   # Code review: hunk for my own agents' changes, tuicr for other people's.
   hunk
   tuicr

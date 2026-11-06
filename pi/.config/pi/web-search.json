@@ -3,5 +3,9 @@
   "searchRouting": {
     "providers": ["kagi", "exa"],
     "fallbackOn": ["unsupported", "transient", "quota", "network", "invalid-response", "empty"]
+  },
+  "fetchRouting": {
+    "providers": ["http", "kagi"],
+    "allowRemoteHostedProviders": true
   }
 }

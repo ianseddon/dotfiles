@@ -14,7 +14,8 @@
     "npm:pi-web-access",
     "npm:@hank-warren/pi-cliproxyapi-provider",
     "npm:@nicknisi/pi-session-name",
-    "npm:@juicesharp/rpiv-ask-user-question"
+    "npm:@juicesharp/rpiv-ask-user-question",
+    "npm:pi-agent-browser-native"
   ],
   "defaultTools": [
     "+codemode"

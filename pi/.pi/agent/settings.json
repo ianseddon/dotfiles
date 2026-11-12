@@ -1,10 +1,12 @@
 {
   "$schema": "https://pi.dev/schemas/settings.schema.json",
   "defaultProvider": "cpa",
-  "defaultModel": "claude-opus-5-5",
+  "defaultModel": "claude-opus",
   "defaultThinkingLevel": "high",
   "enabledModels": [
-    "cpa/claude-opus-5-5",
+    "cpa/claude-opus",
+    "cpa/claude-fable",
+    "cpa/claude-sonnet",
     "cpa/kimi-k3.1-pro",
     "cpa/opencode-go/kimi-k3.1-pro",
     "cpa/gpt-6.1-sol"

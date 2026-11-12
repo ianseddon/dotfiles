@@ -13,7 +13,8 @@
     "npm:pi-wakatime",
     "npm:pi-web-access",
     "npm:@hank-warren/pi-cliproxyapi-provider",
-    "npm:@nicknisi/pi-session-name"
+    "npm:@nicknisi/pi-session-name",
+    "npm:@juicesharp/rpiv-ask-user-question"
   ],
   "defaultTools": [
     "+codemode"

@@ -71,3 +71,14 @@ Rejected: herdr's own worktrees (`herdr worktree create`): no hooks. worktrunk's
 - **ctrl-n:** asks for a new branch name and runs `herdr worktree create` from that repo's main checkout, based on its local default branch, without fetching.
 
 Basing new branches on `origin/main` was rejected: the branch would track it, which breaks a plain `git push`. herdr's own `prefix+w` picker stays, for open workspaces only. Listing takes about 0.2s with a real zoxide database. In a narrow popup the path and agent columns get cut first; label and branch are capped at 24 and 20 characters.
+
+## Secret input
+
+When an agent needs a password, API key, or token, it asks through a popup instead of chat (the `herdr-secret-input` skill). Its `ask-secret` script opens the secret-input plugin over whichever pane is active. The plugin ships inside the skill (`skills/herdr-secret-input/herdr-plugin`), and `ask-secret` links it on first use, re-linking whenever herdr is running some other copy, because the script and the popup must stay in step:
+
+- **Input:** masked with one bullet per character, plus a running count of the bytes that will be stored, so you can check a paste at a glance. Leading and trailing whitespace is trimmed, and enter does nothing until something non-blank has been entered. Esc cancels, ctrl-u clears.
+- **Length check:** `ask-secret` always reports `stored N bytes` on stderr, the same number the popup shows, so the agent can catch an empty or wrong-sized paste without reading the value.
+- **Handoff:** the value goes to a 0600 file in `$XDG_RUNTIME_DIR/herdr-secrets` (tmpfs, 0700). The agent gets only the path, feeds the file to the command that needs it through stdin or an env var, and deletes it afterwards. The value never shows up in the transcript or the session log.
+- **Lifecycle:** herdr returns no handle for a popup and lists none, so the popup reports on itself with files beside the output: a `.pid` while it runs, then the value, `.cancel`, or `.timeout`. The popup enforces the timeout itself (600s by default), and it closes without writing anything once the `ask-secret` process that opened it is gone (killed by the agent harness, say), so it never collects a secret nobody is waiting for. Only one popup can be open at a time, so `ask-secret` waits for any other popup to close first.
+
+Rejected: letting the agent read the value, which puts it in the model context and the session log. gum: it would be a new dependency, while bash `read -rsn1` already covers the input on both machines.

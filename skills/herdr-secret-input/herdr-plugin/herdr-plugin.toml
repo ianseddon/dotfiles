@@ -1,0 +1,15 @@
+id = "secret-input"
+name = "secret-input"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Masked popup that collects a secret (password, API key, token) for an agent and writes it to a private file, so the value never passes through the agent's transcript. Opened by the herdr-secret-input skill's ask-secret script."
+platforms = ["linux", "macos"]
+
+[[panes]]
+id = "prompt"
+title = "secret"
+placement = "popup"
+# ask-secret reads this width to wrap the reason, then fits the height to it
+width = 72
+height = 13
+command = ["bash", "bin/secret-prompt"]

@@ -251,17 +251,24 @@ jq '.cpa = {type: "api_key", key: "!fish -c '\''agent-secret CLIPROXYAPI_API_KEY
   && install -m 600 /tmp/auth.json ~/.pi/agent/auth.json && rm /tmp/auth.json
 ```
 
-SSH keys live in Proton Pass, vault `SSH`, and only the desktop serves them: `proton-pass-agent.service` runs `pass-cli ssh-agent` on `$XDG_RUNTIME_DIR/proton-pass-agent.sock`, and `~/.ssh/config` (not tracked) points `IdentityAgent` there and names each host's key by its `.pub` file with `IdentitiesOnly yes`. New or rotated keys appear within 30 seconds of being saved to the vault. The CLI is never signed in on M75q, where agents run unattended. Keys must be stored without a passphrase (the vault encrypts them); the agent skips passphrase-protected ones. The CLI signs in with a personal access token that can only view the `SSH` vault, not the whole account, so the session stored on the desktop can't read the other vaults. Tokens last at most a year: renew with `pass-cli personal-access-token renew` (from a full `pass-cli login`, then switch back). New keys are added in the Proton Pass app. Setting up a machine:
+SSH keys live in Proton Pass, vault `SSH`, and only the desktop serves them: `proton-pass-agent.service` runs `pass-cli ssh-agent` on `$XDG_RUNTIME_DIR/proton-pass-agent.sock`, and `~/.ssh/config` (not tracked) points `IdentityAgent` there and names each host's key by its `.pub` file with `IdentitiesOnly yes`. New or rotated keys appear within 30 seconds of being saved to the vault. The CLI is never signed in on M75q, where agents run unattended. Keys must be stored without a passphrase (the vault encrypts them); the agent skips passphrase-protected ones. The CLI signs in with a personal access token that can only view the `SSH` vault, not the whole account, so the session stored on the desktop can't read the other vaults. Tokens last at most a year: renew with `pass-cli personal-access-token renew` (from a full `pass-cli login`, then switch back). New keys are added in the Proton Pass app.
+
+pass-cli encrypts its stored session with a key that it keeps in GNOME Keyring. `environment.d/50-proton-pass.conf` sets `PROTON_PASS_LINUX_KEYRING=dbus` for the systemd user units and the whole Hyprland session. `pam/greetd` unlocks the `login` keyring with the login password. The agent starts with `graphical-session.target`, after that unlock. pass-cli's default kernel keyring is cleared on reboot, and pass-cli then deletes the session (see [Troubleshooting](#the-ssh-agent-is-logged-out-after-a-reboot)). Setting up a machine:
 
 ```bash
+sudo pacman -S --needed gnome-keyring
+sudo install -m 0644 pam/greetd /etc/pam.d/greetd
+stow --no-folding --target="$HOME" proton-pass
+# Log out and back in: PAM creates the login keyring and the session gets the environment.
 pass-cli login    # full account, once, to create the token
 pass-cli personal-access-token create --name <machine>-ssh-agent --expiration 1y
 pass-cli personal-access-token access grant --personal-access-token-name <machine>-ssh-agent --vault-name SSH --role viewer
 pass-cli logout
 read -s -P 'token: ' pat; pass-cli login --pat $pat; set -e pat
-stow --no-folding --target="$HOME" proton-pass
 systemctl --user enable --now proton-pass-agent.service
 ```
+
+Use `enable`, never `reenable`, for this unit: it is a link into the dotfiles, and `disable` deletes that link. Re-stow if it goes missing.
 
 OAuth logins stay with each tool on each machine (pi's `/login`, `claude`, `codex login`), because the tools refresh and rewrite those tokens themselves. The AWS CLI's configuration stays out too, since `~/.aws/config` names account IDs and SSO URLs: copy it between machines (mode 0600) and sign in on the headless host with a device code:
 
@@ -282,3 +289,12 @@ faillock --user $USER --reset   # no root needed
 ```
 
 `pam/hyprlock` removes faillock from the locker's stack, so unrelated failures can't lock a live session: `sudo install -m 0644 pam/hyprlock /etc/pam.d/hyprlock`. Run package managers in a real terminal, not a detached shell.
+
+### The SSH agent is logged out after a reboot
+
+`journalctl --user -u proton-pass-agent` shows `Local encryption key not found but local data exists. Forcing logout`, then `This operation requires an authenticated client` every 10 seconds. pass-cli could not read its session key, so it deleted the session. Common causes:
+
+- `PROTON_PASS_LINUX_KEYRING` is not `dbus` for that run. Check `systemctl --user show-environment` and `echo $PROTON_PASS_LINUX_KEYRING`. A single `pass-cli` command without it looks in the kernel keyring and logs out.
+- The `login` keyring is locked or missing. Its password must match the login password, and `/etc/pam.d/greetd` must contain the `pam_gnome_keyring` lines from `pam/greetd`. Check with `busctl --user get-property org.freedesktop.secrets /org/freedesktop/secrets/collection/login org.freedesktop.Secret.Collection Locked`.
+
+Fix the cause, then sign in again with the token (see [Secrets](#secrets)) and run `systemctl --user restart proton-pass-agent`.

@@ -1,8 +1,11 @@
 [Unit]
 Description=Proton Pass SSH agent (keys from the SSH vault)
 Documentation=https://protonpass.github.io/pass-cli/commands/ssh-agent/
-After=network-online.target
+# Start once the desktop session is up, so pam/greetd has already unlocked
+# GNOME Keyring, which holds pass-cli's session key (environment.d/).
+After=graphical-session.target network-online.target
 Wants=network-online.target
+PartOf=graphical-session.target
 
 [Service]
 # Serves the SSH vault's keys; nothing is written to ~/.ssh. Needs a
@@ -12,4 +15,4 @@ Restart=on-failure
 RestartSec=10
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target

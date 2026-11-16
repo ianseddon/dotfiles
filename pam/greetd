@@ -1,0 +1,21 @@
+#%PAM-1.0
+#
+# greetd login with GNOME Keyring unlocked by the login password. Deploy with:
+#   sudo install -m 0644 pam/greetd /etc/pam.d/greetd
+#
+# Arch's stock file plus the two pam_gnome_keyring lines. The auth line keeps
+# the typed password; the session line starts gnome-keyring-daemon and unlocks
+# the "login" keyring with it (creating that keyring on the first login).
+# pass-cli stores its session key there (proton-pass/), so the Proton Pass SSH
+# agent survives reboots.
+#
+# The keyring password must stay equal to the login password. After `passwd`,
+# change the "login" keyring password too (seahorse, or the unlock prompt).
+
+auth       required     pam_securetty.so
+auth       requisite    pam_nologin.so
+auth       include      system-local-login
+auth       optional     pam_gnome_keyring.so
+account    include      system-local-login
+session    include      system-local-login
+session    optional     pam_gnome_keyring.so auto_start

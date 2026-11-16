@@ -1,0 +1,41 @@
+# Root-only recovery material, into the same repository as config.yaml.
+# Not on the timer: run `backup-system` after changing /etc, Secure Boot keys,
+# or LUKS key slots (for example a TPM re-enrollment).
+# borgmatic only reads config.yaml by default, so the hourly run ignores this file.
+
+source_directories:
+    - /etc
+    - /var/lib/sbctl
+    - /root/recovery
+
+one_file_system: true
+
+# Same repository, passphrase, and append-only key as config.yaml.
+repositories:
+    - path: ssh://w0dtrp32@w0dtrp32.repo.borgbase.com/./repo
+      label: borgbase
+
+compression: zstd,6
+archive_name_format: 'system-{now:%Y-%m-%dT%H:%M:%S}'
+match_archives: 'sh:system-*'
+
+encryption_passcommand: cat /home/ian/.config/borgmatic/passphrase
+ssh_command: >-
+    ssh -i /home/ian/.ssh/borgbase-desktop -o IdentitiesOnly=yes -o IdentityAgent=none
+    -o UserKnownHostsFile=/home/ian/.config/borgmatic/known_hosts -o StrictHostKeyChecking=yes
+
+keep_daily: 7
+keep_monthly: 12
+
+skip_actions:
+    - compact
+    - check
+
+commands:
+    # The header changes whenever a key slot does, so refresh it every run.
+    - before: action
+      when: [create]
+      run:
+          - install -d -m 0700 /root/recovery
+          - rm -f /root/recovery/luks-header.img
+          - cryptsetup luksHeaderBackup /dev/disk/by-uuid/03fa62bc-3e70-4b40-a907-d566be48959d --header-backup-file /root/recovery/luks-header.img

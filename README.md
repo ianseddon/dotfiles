@@ -23,6 +23,7 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 | `herdr`, `worktrunk`, `hunk`, `tuicr` | Workspaces, worktrees, and review | ✓ | ✓ |
 | `hyprland`, `waybar`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
 | `proton-pass` | SSH agent serving keys from Proton Pass | ✓ | |
+| `borgmatic` | Hourly backups of `~` to BorgBase (see [Backups](#backups)) | ✓ | |
 | `commitizen` | Commit message conventions | ✓ | ✓ |
 
 `ly` and `pam` are system files, installed into `/etc` by hand rather than stowed; `i3` is the retired X11 session, kept for reference. `skills` isn't a Stow package either: it holds my own agent skills (see [Agents](#agents)), and `docs` holds design notes.
@@ -106,6 +107,41 @@ docker info --format '{{json .SecurityOptions}}'   # includes "name=rootless"
 ```
 
 Rootless limits: published ports must be 1024 or higher, `--network host` is RootlessKit's namespace, and files that non-root container users write to bind mounts belong to subordinate UIDs (reclaim with `docker run --rm -v "$PWD:/w" alpine chown -R 0:0 /w`). Images and volumes live under `~/.local/share/docker`.
+
+## Backups
+
+The desktop backs up `~` to [BorgBase](https://www.borgbase.com) every hour with borgmatic, as a `systemd --user` timer. The `borgmatic` package holds the configuration and units, and `nix/hosts/desktop.nix` provides borgmatic and borg. The repository is `desktop` (`ssh://w0dtrp32@w0dtrp32.repo.borgbase.com/./repo`), encrypted with `repokey-blake2`; its server host keys are pinned in `borgmatic/.config/borgmatic/known_hosts`.
+
+- **What's included:** all of `~` except what can be rebuilt or downloaded again: caches, package stores and toolchains, editor plugins, project dependencies and build output, apps whose state lives on their servers, `~/Downloads`, and database dumps. The list is `exclude_patterns` in `config.yaml`. To skip one directory without editing it, create a `.nobackup` file in it.
+- **Git repositories** are backed up with their `.git`. Stashes, unpushed branches, uncommitted changes, and ignored `.env` files exist only on this disk, so a remote is not a backup of them. After a restore, reinstall dependencies (`pnpm install`, `uv sync`).
+- **Retention:** 24 hourly, 7 daily, 4 weekly, and 12 monthly `home-*` archives.
+- **Root-only material** goes into `system-*` archives with `backup-system`, which asks for authorisation through polkit: `/etc` (including `/etc/kernel/keys`), `/var/lib/sbctl`, and `/root/recovery` (a LUKS header backup it refreshes on each run, plus the factory Secure Boot keys). It isn't on the timer. Run it after changing `/etc`, the Secure Boot keys, or the LUKS key slots, such as a TPM re-enrollment.
+
+Two things on each machine stay out of this repository:
+
+- `~/.config/borgmatic/passphrase` (mode 0600). It and the exported repository key are also in Proton Pass, in the note **BorgBase desktop repository**.
+- `~/.ssh/borgbase-desktop`, the BorgBase key with append-only access. A compromised desktop can add archives but not destroy old ones. Pruning only marks archives as deleted; to free space, use **More > Compact repo** in BorgBase.
+
+BorgBase alerts by email when no backup has arrived for two days. The timer only runs while you're logged in (no lingering) and catches up on the next login. A failed run shows a desktop notification.
+
+Setting up a machine, after adding its key to BorgBase:
+
+```bash
+ssh-keygen -t ed25519 -N '' -C desktop-backup@borgbase -f ~/.ssh/borgbase-desktop
+stow --no-folding --target="$HOME" borgmatic
+# Write the passphrase from Proton Pass to ~/.config/borgmatic/passphrase (mode 0600).
+systemctl --user daemon-reload
+systemctl --user enable --now borgmatic.timer
+```
+
+Restoring:
+
+```bash
+borgmatic list                                   # home-* archives
+borgmatic mount --archive latest --mount-point ~/mnt/backup
+borgmatic extract --archive latest --path home/ian/dev/some-repo --destination /tmp/restore
+borgmatic -c ~/.config/borgmatic/system.yaml list   # system-* archives
+```
 
 ## Agents
 

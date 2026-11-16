@@ -1,0 +1,11 @@
+[Unit]
+Description=Back up ~ to BorgBase hourly
+
+[Timer]
+OnCalendar=hourly
+# After boot or a gap (logged out, asleep), run the missed backup once.
+Persistent=true
+RandomizedDelaySec=5m
+
+[Install]
+WantedBy=timers.target

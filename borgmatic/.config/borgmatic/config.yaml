@@ -1,0 +1,144 @@
+# Desktop backup to BorgBase. Runs as ian from borgmatic.timer (systemd --user).
+# Back up all of ~ except what a package manager, build, or app rebuilds.
+# Untracked, per machine: ~/.config/borgmatic/passphrase and ~/.ssh/borgbase-desktop.
+
+source_directories:
+    # Quoted: a bare ~ is YAML for null.
+    - '~'
+
+repositories:
+    - path: ssh://w0dtrp32@w0dtrp32.repo.borgbase.com/./repo
+      label: borgbase
+
+# ~ is one filesystem; don't follow anything mounted under it.
+one_file_system: true
+
+# Skip directories tagged CACHEDIR.TAG (most tool caches) or holding a
+# .nobackup file (for one-offs: `touch some/dir/.nobackup`).
+exclude_caches: true
+exclude_if_present:
+    - .nobackup
+
+# Borg fnmatch: a pattern matches a path and everything below it, and `*`
+# also matches `/`, so `*/node_modules` matches at any depth.
+exclude_patterns:
+    # Caches and the Trash.
+    - ~/.cache
+    - ~/.local/share/Trash
+    # Transient. Move anything worth keeping out of Downloads.
+    - ~/Downloads
+    # Package stores and toolchains. Nix, pacman, fnm, uv, and rustup reinstall them.
+    - ~/.npm
+    - ~/.bun
+    - ~/.yarn
+    - ~/.local/share/pnpm
+    - ~/.local/share/fnm
+    - ~/.local/share/uv
+    - ~/.local/share/virtualenv
+    - ~/.rustup
+    - ~/.cargo/registry
+    - ~/.cargo/git
+    - ~/go/pkg
+    - ~/.m2/repository
+    # Editor plugins and downloaded language tooling.
+    - ~/.local/share/nvim
+    - ~/.local/share/nvim-chad
+    - ~/.local/share/nvim-12
+    - ~/.local/share/zed/node
+    - ~/.local/share/zed/languages
+    - ~/.local/share/zed/copilot
+    - ~/.local/share/zed/extensions
+    - ~/.local/share/zed/prettier
+    - ~/.vscode/extensions
+    - ~/.duckdb/extensions
+    - ~/.config/herdr/plugins
+    # Apps whose state lives on their servers, or that redownload it.
+    - ~/.config/discord
+    - ~/.config/teams-for-linux
+    - ~/.config/sst
+    - ~/.local/share/spotify-launcher
+    - ~/.local/share/Smart Code ltd
+    - ~/.local/share/voxtype/models
+    - ~/.wakatime
+    - ~/.zoom
+    # Agent browser profiles (agent-browser and friends) and app logs.
+    - ~/.config/chromium-headless
+    - ~/.t3/userdata/logs
+    - ~/.local/state/nvim/*.log
+    # Chromium and Electron caches inside app profiles.
+    - ~/.config/*/Cache
+    - ~/.config/*/Code Cache
+    - ~/.config/*/GPUCache
+    - ~/.config/*/DawnGraphiteCache
+    - ~/.config/*/DawnWebGPUCache
+    - ~/.config/*/GrShaderCache
+    - ~/.config/*/ShaderCache
+    - ~/.config/*/Service Worker/CacheStorage
+    - ~/.config/*/Service Worker/ScriptCache
+    - ~/.config/*/optimization_guide_model_store
+    # Dependencies and build output in projects, at any depth.
+    - '*/node_modules'
+    - '*/.pnpm-store'
+    - '*/.next'
+    - '*/.turbo'
+    - '*/dist'
+    - '*/storybook-static'
+    - '*/.sst'
+    - '*/.open-next'
+    - '*/cdk.out'
+    - '*/.vercel'
+    - '*/.wrangler'
+    - '*/.svelte-kit'
+    - '*/.nuxt'
+    - '*/.expo'
+    - '*/.parcel-cache'
+    - '*/.terraform'
+    - '*/.gradle'
+    - '*/.direnv'
+    - '*/.venv'
+    - '*/__pycache__'
+    - '*/.pytest_cache'
+    - '*/.mypy_cache'
+    - '*/.ruff_cache'
+    # Database dumps: client data, and large. Not `*.sql`, which would drop migrations.
+    - '*-dump.sql'
+    - '*.dump'
+    - '*.pgcustom'
+    - '*/db-dump'
+    - '*/dumps'
+
+compression: zstd,6
+archive_name_format: 'home-{now:%Y-%m-%dT%H:%M:%S}'
+match_archives: 'sh:home-*'
+
+encryption_passcommand: cat /home/ian/.config/borgmatic/passphrase
+# IdentityAgent=none: use only the backup key, never the Proton Pass agent.
+ssh_command: >-
+    ssh -i ~/.ssh/borgbase-desktop -o IdentitiesOnly=yes -o IdentityAgent=none
+    -o UserKnownHostsFile=~/.config/borgmatic/known_hosts -o StrictHostKeyChecking=yes
+    -o ServerAliveInterval=10 -o ServerAliveCountMax=30
+
+# Network blips on a desktop are normal; try again before failing.
+retries: 3
+retry_wait: 60
+
+keep_hourly: 24
+keep_daily: 7
+keep_weekly: 4
+keep_monthly: 12
+
+# The key is append-only: prune only marks archives deleted, and compact can't
+# free space. Compact from BorgBase (More > Compact repo) when space runs low.
+skip_actions:
+    - compact
+
+checks:
+    - name: repository
+      frequency: 2 weeks
+    - name: archives
+      frequency: 2 weeks
+    - name: spot
+      frequency: 1 month
+      count_tolerance_percentage: 10
+      data_sample_percentage: 1
+      data_tolerance_percentage: 0.5

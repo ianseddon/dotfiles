@@ -16,4 +16,8 @@ dev
   # m75q would be in reach of every unattended agent there.
   proton-pass-cli
   passCliCompletions
+  # Backups to BorgBase (the `borgmatic` Stow package). borgmatic runs its own
+  # borg; borgbackup puts the same borg on PATH for restores.
+  borgmatic
+  borgbackup
 ])

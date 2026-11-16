@@ -1,0 +1,14 @@
+[Unit]
+Description=Back up ~ to BorgBase with borgmatic
+Documentation=https://torsion.org/borgmatic/
+OnFailure=borgmatic-failed.service
+
+[Service]
+Type=oneshot
+# The Nix profile's borgmatic, which bundles its own borg.
+ExecStart=%h/.nix-profile/bin/borgmatic --verbosity -1 --syslog-verbosity 1
+Nice=19
+CPUSchedulingPolicy=batch
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+LogRateLimitIntervalSec=0

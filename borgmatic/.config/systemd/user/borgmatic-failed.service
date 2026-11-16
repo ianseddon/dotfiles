@@ -1,0 +1,6 @@
+[Unit]
+Description=Notify that the borgmatic backup failed
+
+[Service]
+Type=oneshot
+ExecStart=notify-send --urgency=critical --app-name=borgmatic "Backup failed" "journalctl --user -u borgmatic.service"

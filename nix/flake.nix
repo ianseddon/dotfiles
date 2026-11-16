@@ -10,7 +10,7 @@
   # nix/package.nix builds against our nixpkgs, so it's a source, not a flake.
   # The one input pinned to a release: pi's main branch often doesn't build,
   # and it has no release branch. Bump the tag when pi releases.
-  inputs.pi.url = "github:earendil-works/pi/v1.5.0";
+  inputs.pi.url = "github:earendil-works/pi/v1.5.2";
   inputs.pi.flake = false;
 
   outputs = { nixpkgs, pi, ... }:

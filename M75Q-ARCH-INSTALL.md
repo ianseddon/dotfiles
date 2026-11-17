@@ -295,25 +295,36 @@ openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
   -out /etc/kernel/keys/pcr-private.pem
 openssl pkey -in /etc/kernel/keys/pcr-private.pem -pubout \
   -out /etc/kernel/keys/pcr-public.pem
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
+  -out /etc/kernel/keys/pcr-system-private.pem
+openssl pkey -in /etc/kernel/keys/pcr-system-private.pem -pubout \
+  -out /etc/kernel/keys/pcr-system-public.pem
 ```
 
 There are two separate purposes:
 
 - **sbctl's keys** authorize boot images under Secure Boot.
-- **The PCR key pair** signs the expected PCR11 measurement for each rebuilt UKI. The TPM trusts that public key rather than one immutable kernel version.
+- **The PCR key pairs** sign the expected PCR11 measurement for each rebuilt UKI. The TPM trusts a public key rather than one immutable kernel version. `pcr-private.pem` signs only the initrd phase, and the root disk trusts only that key. `pcr-system-private.pem` signs the phases after the initrd, so the running system can decrypt its own TPM-bound credentials, such as the NvPCR anchor secret that `systemd-tpm2-setup.service` stores. Without it, that service fails on every boot with "Failed to unseal secret using TPM2: Device not a stream".
 
 Create `/etc/kernel/uki.conf`:
 
 ```ini
 [UKI]
 PCRBanks=sha256
-PCRPKey=/etc/kernel/keys/pcr-public.pem
+PCRPKey=/etc/kernel/keys/pcr-system-public.pem
 
-[PCRSignature:root]
+[PCRSignature:initrd]
 Phases=enter-initrd
 PCRPrivateKey=/etc/kernel/keys/pcr-private.pem
 PCRPublicKey=/etc/kernel/keys/pcr-public.pem
+
+[PCRSignature:system]
+Phases=enter-initrd:leave-initrd enter-initrd:leave-initrd:sysinit enter-initrd:leave-initrd:sysinit:ready
+PCRPrivateKey=/etc/kernel/keys/pcr-system-private.pem
+PCRPublicKey=/etc/kernel/keys/pcr-system-public.pem
 ```
+
+`PCRPKey` embeds the system key as the UKI's `.pcrpkey`, which is the key that `systemd-creds` and other services bind new credentials to by default. Disk enrollment below names the initrd key explicitly.
 
 Keep signing ownership simple: **ukify generates the TPM policy signatures; sbctl's packaged mkinitcpio post-hook signs the UKI for Secure Boot.** Do not add a second Secure Boot signing configuration to `uki.conf`. Do not remove `systemd-ukify`: mkinitcpio's internal UKI builder does not provide this PCR-signing setup.
 
@@ -351,7 +362,7 @@ bootctl --esp-path=/efi list
 Require:
 
 - `mkinitcpio -P` completed successfully, including the sbctl post-hooks.
-- UKI sections include `.linux`, `.initrd`, `.cmdline`, `.pcrpkey`, and `.pcrsig`.
+- UKI sections include `.linux`, `.initrd`, `.cmdline`, `.pcrpkey`, and `.pcrsig`. `.pcrsig` holds four sha256 signatures: one from the initrd key and three from the system key.
 - Both UKIs and the bootloader copies on the ESP are signed.
 - The default and fallback entries are listed.
 
@@ -484,7 +495,7 @@ Why these settings:
 - **PCR7** binds to the Secure Boot policy in this installed boot environment.
 - **Signed PCR11** admits the UKIs signed by our PCR key, including newly rebuilt kernels.
 - **PCR15 initially zero** permits unlocking before root activation. The root-key measurement then changes PCR15, closing later re-use in the same boot.
-- `Phases=enter-initrd` limits our PCR signatures to the early-boot unlock phase.
+- The root disk trusts only `pcr-public.pem`, whose signatures cover only `enter-initrd`. The system key's signatures for later phases therefore cannot unlock the disk.
 - No PIN means an ordinary reboot requires no human input.
 
 Do not add a fixed PCR11 value to `--tpm2-pcrs`. No `--tpm2-signature` argument is needed here: enrollment targets the early-boot policy, not the running system's post-boot state.

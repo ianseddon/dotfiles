@@ -153,6 +153,22 @@ pi, Claude Code, and codex all run from the Nix profile; their self-updaters don
 - **Claude Code:** `claude/.claude/settings.json`, including the plugin marketplaces it installs from. It talks to CLIProxyAPI (`ANTHROPIC_BASE_URL`), and its `apiKeyHelper` fetches the key from Infisical (see [Secrets](#secrets)). Auto memory is off (`autoMemoryEnabled: false`), so durable notes belong in this repository or a project's `AGENTS.md`, not in `~/.claude/projects/*/memory`.
 - **codex:** its `config.toml` is machine state (project trust, hook hashes), so it isn't tracked; add its plugins with `codex plugin add`.
 
+### agent-skills commands in pi
+
+`npx skills add addyosmani/agent-skills` installs only the skills. In Claude Code, the agent-skills plugin also provides one command per lifecycle phase (`/spec`, `/plan`, `/build`, `/test`, `/review`, `/code-simplify`, `/ship`, `/webperf`, `/constraints`), the reviewer personas that `/ship` and `/webperf` run, and the shared `references/` the skills link to. `agent-skills-pi` gives pi the same set. It fetches upstream at the commit in `agents/.agents/.skill-lock.json` and generates:
+
+- the commands as prompt templates in `pi/.pi/agent/prompts/`, with short notes that map Claude Code terms to pi;
+- the personas as [pi-subagents](https://github.com/nicobailon/pi-subagents) agents in `pi/.pi/agent/agents/`, so `/ship` runs them in parallel as Claude Code does;
+- the references in `agents/.agents/references/`, which is where the skills' `../../references/` links point.
+
+The generated files are marked and must not be edited by hand. After updating the skills, regenerate and link any new files:
+
+```bash
+npx skills update
+agent-skills-pi
+stow --no-folding --target="$HOME" pi
+```
+
 ### Nexus-only skills
 
 The AWS and Bedrock skills are work material, so they stay out of this public repository and out of every other project. Each machine keeps them in `~/.local/share/nexus-skills/<name>/`, and `nexus-skills` links them into a checkout's `.agents/skills` (pi, codex) and `.claude/skills` (Claude Code), listing the links in `.git/info/exclude` so they never show as changes. It only touches `workforce-monorepo` and `nexus-*` checkouts. worktrunk runs it for every new worktree; for existing checkouts:

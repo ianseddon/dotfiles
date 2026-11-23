@@ -42,7 +42,7 @@ fish's universal variables (`~/.config/fish/fish_variables`) stay out of the rep
 
 A tool belongs in `dev.nix` when both machines use it. Python is uv's (per-project interpreters, `uv tool`); Node is fnm's per project (`.node-version`, `.nvmrc`, `engines`), falling back to `fnm default`, the newest 24.x. Nix's Node 24 serves everything outside fish.
 
-nixpkgs is the only flake input that moves on its own, so `nix flake update` advances everything. pi is the exception: it comes from its repository at a release tag (`inputs.pi.url` in `nix/flake.nix`), because nixpkgs trails its releases and its main branch often doesn't build. `nix/patches/pi-schema-tarball.patch` carries an upstream fix until [earendil-works/pi#11685](https://github.com/earendil-works/pi/pull/11685) merges; delete it then, and the build fails loudly if it stops applying.
+nixpkgs is the only flake input that moves on its own, so `nix flake update` advances everything. pi is the exception: it comes from its repository at a release tag (`inputs.pi.url` in `nix/flake.nix`), because nixpkgs trails its releases and its main branch often doesn't build.
 
 ### Bootstrap a machine
 

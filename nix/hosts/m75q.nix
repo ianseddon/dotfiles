@@ -9,4 +9,7 @@ dev
   # legacy hyphenated command for scripts that still call it.
   docker
   docker-compose
+  # The runtime the Herdr mobile app connects to over SSH (`herdr-core`,
+  # `hc`). It runs its own server, separate from the herdr TUI's.
+  herdr-core
 ])

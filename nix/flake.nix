@@ -23,17 +23,9 @@
         config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) unfree;
       };
 
-      # Delete the patch once earendil-works/pi#11685 merges; until then
-      # pi-schema has no tarball and the package fails to evaluate.
-      piSource = pkgs.applyPatches {
-        name = "pi-source";
-        src = pi;
-        patches = [ ./patches/pi-schema-tarball.patch ];
-      };
-
       dev = import ./dev.nix {
         inherit pkgs;
-        pi = pkgs.callPackage (piSource + "/nix/package.nix") { source = piSource; };
+        pi = pkgs.callPackage (pi + "/nix/package.nix") { source = pi; };
       };
 
       # hosts/<name>.nix: the development tools plus that machine's own

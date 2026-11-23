@@ -1,0 +1,444 @@
+#!/usr/bin/env node
+// Aggregates open authored GitHub PRs, linked Jira work items (via acli),
+// and (optionally in CLI preview mode) live herdr-core terminals.
+//
+// Usage:
+//   work-board-data [--json] [--pretty] [--no-jira]
+
+const { execFile } = require("node:child_process");
+const { promisify } = require("node:util");
+
+const execFileAsync = promisify(execFile);
+
+const JIRA_KEY_RE = /\b([A-Z][A-Z0-9]{1,9}-\d+)\b/g;
+const PARKED_RE = /\b(do not merge|prototype)\b/i;
+
+const PR_GRAPHQL = `
+query($cursor: String) {
+  viewer { login }
+  search(query: "is:pr is:open author:@me sort:updated-desc", type: ISSUE, first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on PullRequest {
+        number
+        title
+        url
+        isDraft
+        createdAt
+        updatedAt
+        headRefName
+        baseRefName
+        additions
+        deletions
+        mergeable
+        reviewDecision
+        repository { name nameWithOwner }
+        labels(first: 15) { nodes { name } }
+        reviewRequests(first: 15) {
+          totalCount
+          nodes {
+            requestedReviewer {
+              ... on User { login }
+              ... on Team { name }
+            }
+          }
+        }
+        latestOpinionatedReviews(first: 15) {
+          nodes {
+            state
+            submittedAt
+            author { login }
+          }
+        }
+        reviews(first: 20) {
+          totalCount
+        }
+        reviewThreads(first: 50) {
+          nodes {
+            isResolved
+            isOutdated
+            comments(last: 1) {
+              nodes {
+                createdAt
+                author { login }
+              }
+            }
+          }
+        }
+        commits(last: 1) {
+          nodes {
+            commit {
+              committedDate
+              statusCheckRollup { state }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`;
+
+async function runCmd(cmd, args, timeout = 25000) {
+  const { stdout } = await execFileAsync(cmd, args, {
+    timeout,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  return stdout;
+}
+
+function extractJiraKeys(...texts) {
+  const keys = new Set();
+  for (const text of texts) {
+    if (!text) continue;
+    for (const match of text.toUpperCase().matchAll(JIRA_KEY_RE)) {
+      keys.add(match[1]);
+    }
+  }
+  return [...keys];
+}
+
+async function fetchGitHubPRs() {
+  let viewer = null;
+  const prs = [];
+  let cursor = null;
+
+  for (let page = 0; page < 3; page++) {
+    const args = ["api", "graphql", "-f", `query=${PR_GRAPHQL}`];
+    if (cursor) args.push("-f", `cursor=${cursor}`);
+    const raw = await runCmd("gh", args);
+    const data = JSON.parse(raw).data;
+    viewer = data.viewer?.login ?? viewer;
+    for (const node of data.search.nodes) {
+      if (node && node.number) prs.push(node);
+    }
+    if (!data.search.pageInfo?.hasNextPage) break;
+    cursor = data.search.pageInfo.endCursor;
+  }
+
+  return { viewer, prs };
+}
+
+async function fetchJiraSite() {
+  try {
+    const out = await runCmd("acli", ["jira", "auth", "status"], 10000);
+    const match = out.match(/Site:\s*(\S+)/);
+    return match ? `https://${match[1]}` : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchJiraByJql(jql) {
+  const fields = "key,summary,status,priority,issuetype";
+  const raw = await runCmd("acli", [
+    "jira",
+    "workitem",
+    "search",
+    "--jql",
+    jql,
+    "--fields",
+    fields,
+    "--limit",
+    "100",
+    "--json",
+  ]);
+  const items = JSON.parse(raw);
+  return Array.isArray(items) ? items : [];
+}
+
+function normalizeJiraItem(item) {
+  return {
+    key: item.key,
+    summary: item.fields?.summary ?? "",
+    status: item.fields?.status?.name ?? "",
+    statusCategory: item.fields?.status?.statusCategory?.key ?? "",
+    priority: item.fields?.priority?.name ?? "",
+    type: item.fields?.issuetype?.name ?? "",
+  };
+}
+
+function classifyPR(pr, viewer) {
+  const labels = (pr.labels?.nodes ?? []).map((l) => l.name);
+  const labelSet = new Set(labels.map((l) => l.toLowerCase()));
+  const parked =
+    PARKED_RE.test(pr.title) ||
+    labelSet.has("do-not-merge") ||
+    labelSet.has("do not merge") ||
+    labelSet.has("wip");
+
+  const lastCommit = pr.commits?.nodes?.[0]?.commit ?? null;
+  const ciState = lastCommit?.statusCheckRollup?.state ?? null;
+  const lastCommitAt = lastCommit?.committedDate ?? pr.updatedAt;
+
+  const threads = pr.reviewThreads?.nodes ?? [];
+  let unresolvedTotal = 0;
+  let unresolvedNeedsMe = 0;
+  let unresolvedWaitingOnThem = 0;
+  let latestReviewerThreadAt = null;
+
+  for (const thread of threads) {
+    if (thread.isResolved) continue;
+    unresolvedTotal++;
+    const lastComment = thread.comments?.nodes?.[0];
+    const author = lastComment?.author?.login ?? null;
+    if (author && viewer && author.toLowerCase() === viewer.toLowerCase()) {
+      unresolvedWaitingOnThem++;
+    } else {
+      unresolvedNeedsMe++;
+      if (lastComment?.createdAt) {
+        if (!latestReviewerThreadAt || lastComment.createdAt > latestReviewerThreadAt) {
+          latestReviewerThreadAt = lastComment.createdAt;
+        }
+      }
+    }
+  }
+
+  const opinionated = pr.latestOpinionatedReviews?.nodes ?? [];
+  const changesRequestedReview = opinionated.find((r) => r.state === "CHANGES_REQUESTED");
+  const approvedReview = opinionated.find((r) => r.state === "APPROVED");
+
+  const pendingReviewers = (pr.reviewRequests?.nodes ?? [])
+    .map((n) => n.requestedReviewer?.login ?? n.requestedReviewer?.name)
+    .filter(Boolean);
+  const hasReviewRequests = (pr.reviewRequests?.totalCount ?? 0) > 0;
+  const hasReviews = (pr.reviews?.totalCount ?? 0) > 0;
+  const hasRobotMerge = labelSet.has("robot-says-merge");
+  const isApproved = pr.reviewDecision === "APPROVED" || hasRobotMerge;
+  const isConflicting = pr.mergeable === "CONFLICTING";
+  const isCiFailed = ciState === "FAILURE" || ciState === "ERROR";
+  const isCiPending = ciState === "PENDING" || ciState === "EXPECTED";
+
+  let column;
+  let reason;
+  let waitingSince;
+  let ball = "me";
+
+  if (pr.isDraft) {
+    column = "self_review";
+    reason = isCiFailed ? "Draft · CI failed" : "Draft PR";
+    waitingSince = lastCommitAt || pr.createdAt;
+  } else if (
+    pr.reviewDecision === "CHANGES_REQUESTED" ||
+    unresolvedNeedsMe > 0 ||
+    isCiFailed ||
+    isConflicting
+  ) {
+    column = "needs_action";
+    const parts = [];
+    if (pr.reviewDecision === "CHANGES_REQUESTED") parts.push("Changes requested");
+    if (unresolvedNeedsMe > 0) parts.push(`${unresolvedNeedsMe} unresolved`);
+    if (isCiFailed) parts.push("CI failed");
+    if (isConflicting) parts.push("Conflicts");
+    reason = parts.join(" · ");
+    waitingSince =
+      latestReviewerThreadAt ||
+      changesRequestedReview?.submittedAt ||
+      pr.updatedAt;
+  } else if (isApproved && !isCiPending) {
+    column = "ready_to_merge";
+    reason = hasRobotMerge ? "robot-says-merge" : "Approved";
+    waitingSince = approvedReview?.submittedAt || pr.updatedAt;
+  } else if (!hasReviewRequests && !hasReviews && !isApproved) {
+    column = "self_review";
+    reason = "No reviewers assigned";
+    waitingSince = lastCommitAt || pr.updatedAt;
+  } else {
+    column = "in_review";
+    ball = "others";
+    if (isCiPending) reason = "CI running";
+    else if (unresolvedWaitingOnThem > 0) reason = `Replied (${unresolvedWaitingOnThem} open)`;
+    else if (pendingReviewers.length > 0) reason = `Waiting: ${pendingReviewers.slice(0, 2).join(", ")}`;
+    else reason = "Awaiting review";
+    waitingSince = pr.updatedAt;
+  }
+
+  const jiraKeys = extractJiraKeys(pr.title, pr.headRefName);
+
+  return {
+    id: `${pr.repository.nameWithOwner}#${pr.number}`,
+    number: pr.number,
+    repo: pr.repository.nameWithOwner,
+    repoShort: pr.repository.name,
+    title: pr.title,
+    url: pr.url,
+    branch: pr.headRefName,
+    baseBranch: pr.baseRefName,
+    isStacked: !["main", "master", "develop"].includes(pr.baseRefName),
+    isDraft: pr.isDraft,
+    parked,
+    column,
+    ball,
+    reason,
+    waitingSince,
+    createdAt: pr.createdAt,
+    updatedAt: pr.updatedAt,
+    lastCommitAt,
+    additions: pr.additions,
+    deletions: pr.deletions,
+    ciState,
+    mergeable: pr.mergeable,
+    reviewDecision: pr.reviewDecision,
+    labels,
+    pendingReviewers,
+    unresolvedTotal,
+    unresolvedNeedsMe,
+    unresolvedWaitingOnThem,
+    jiraKey: jiraKeys[0] ?? null,
+    jiraKeys,
+  };
+}
+
+function formatAge(iso) {
+  if (!iso) return "";
+  const ms = Math.max(0, Date.now() - Date.parse(iso));
+  const mins = Math.floor(ms / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 48) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
+}
+
+function printPretty(payload) {
+  const cols = [
+    { key: "self_review", label: "SELF-REVIEW (YOUR BALL)" },
+    { key: "needs_action", label: "NEEDS ACTION (YOUR BALL)" },
+    { key: "in_review", label: "IN REVIEW (OTHERS)" },
+    { key: "ready_to_merge", label: "READY TO MERGE (YOUR BALL)" },
+  ];
+
+  console.log(
+    `Work Board Snapshot (${payload.fetchedAt}) · ${payload.prs.length} open PRs · ${Object.keys(payload.jira).length} Jira items`
+  );
+  if (payload.errors.length) {
+    console.log(`Warnings: ${payload.errors.join("; ")}`);
+  }
+  console.log("");
+
+  for (const col of cols) {
+    const items = payload.prs
+      .filter((p) => p.column === col.key)
+      .sort((a, b) => (a.waitingSince || "").localeCompare(b.waitingSince || ""));
+    console.log(`=== ${col.label} (${items.length}) ===`);
+    for (const p of items) {
+      const jira = p.jiraKey ? `${p.jiraKey}` : "no-jira";
+      const multi = p.siblingPrCount > 1 ? ` [${p.siblingPrCount} PRs]` : "";
+      const parkedTag = p.parked ? " [PARKED]" : "";
+      const jiraStatus = p.jira?.status ? ` (${p.jira.status})` : "";
+      console.log(
+        `  [${formatAge(p.waitingSince).padStart(4)}] ${jira}${jiraStatus} #${p.number} (${p.repoShort})${multi}${parkedTag}`
+      );
+      console.log(`         ${p.title}`);
+      console.log(`         ${p.reason} · CI:${p.ciState ?? "-"} · branch:${p.branch}`);
+    }
+    console.log("");
+  }
+}
+
+async function main() {
+  const args = new Set(process.argv.slice(2));
+  const pretty = args.has("--pretty");
+  const noJira = args.has("--no-jira");
+
+  const errors = [];
+
+  // Kick off GitHub + Jira site + user's open Jira tickets in parallel.
+  const ghPromise = fetchGitHubPRs();
+  const jiraSitePromise = noJira ? Promise.resolve(null) : fetchJiraSite();
+  const myJiraPromise = noJira
+    ? Promise.resolve([])
+    : fetchJiraByJql("assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC").catch((err) => {
+        errors.push(`jira(mine): ${err.message}`);
+        return [];
+      });
+
+  const [{ viewer, prs: rawPrs }, jiraSite, myJiraItems] = await Promise.all([
+    ghPromise,
+    jiraSitePromise,
+    myJiraPromise,
+  ]);
+
+  const prs = rawPrs.map((pr) => classifyPR(pr, viewer));
+
+  // Count how many open PRs share each Jira key (for multi-PR / stacked hints).
+  const keyCounts = new Map();
+  for (const pr of prs) {
+    if (!pr.jiraKey) continue;
+    keyCounts.set(pr.jiraKey, (keyCounts.get(pr.jiraKey) ?? 0) + 1);
+  }
+  for (const pr of prs) {
+    pr.siblingPrCount = pr.jiraKey ? keyCounts.get(pr.jiraKey) ?? 1 : 0;
+  }
+
+  const jira = {};
+  if (!noJira) {
+    for (const item of myJiraItems) {
+      if (!item?.key) continue;
+      jira[item.key] = {
+        ...normalizeJiraItem(item),
+        url: jiraSite ? `${jiraSite}/browse/${item.key}` : null,
+      };
+    }
+
+    // Fetch only PR-referenced Jira keys that were not already in myJiraItems.
+    const missingKeys = [...keyCounts.keys()].filter((k) => !jira[k]);
+    if (missingKeys.length > 0) {
+      const chunks = [];
+      for (let i = 0; i < missingKeys.length; i += 45) {
+        chunks.push(`key in (${missingKeys.slice(i, i + 45).join(",")})`);
+      }
+      const extra = await Promise.allSettled(chunks.map((jql) => fetchJiraByJql(jql)));
+      for (const res of extra) {
+        if (res.status === "fulfilled") {
+          for (const item of res.value) {
+            if (!item?.key) continue;
+            jira[item.key] = {
+              ...normalizeJiraItem(item),
+              url: jiraSite ? `${jiraSite}/browse/${item.key}` : null,
+            };
+          }
+        } else {
+          errors.push(`jira(keys): ${res.reason?.message ?? res.reason}`);
+        }
+      }
+    }
+
+    for (const pr of prs) {
+      pr.jira = pr.jiraKey ? jira[pr.jiraKey] ?? null : null;
+    }
+  }
+
+  const repos = [...new Set(prs.map((p) => p.repo))].sort();
+  const counts = {
+    total: prs.length,
+    parked: prs.filter((p) => p.parked).length,
+    self_review: prs.filter((p) => p.column === "self_review" && !p.parked).length,
+    needs_action: prs.filter((p) => p.column === "needs_action" && !p.parked).length,
+    in_review: prs.filter((p) => p.column === "in_review" && !p.parked).length,
+    ready_to_merge: prs.filter((p) => p.column === "ready_to_merge" && !p.parked).length,
+  };
+
+  const payload = {
+    version: 1,
+    fetchedAt: new Date().toISOString(),
+    viewer,
+    jiraSite,
+    repos,
+    counts,
+    prs,
+    jira,
+    errors,
+  };
+
+  if (pretty) {
+    printPretty(payload);
+  } else {
+    process.stdout.write(JSON.stringify(payload));
+  }
+}
+
+main().catch((err) => {
+  process.stderr.write(String(err?.stack ?? err) + "\n");
+  process.exit(1);
+});

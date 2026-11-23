@@ -49,13 +49,14 @@ let
     '';
   };
   # Fish completions for tools whose packages don't install one, generated
-  # from the same binaries at build time so they move with nixpkgs.
+  # from the same binaries at build time so they move with nixpkgs. acli had
+  # one until 1.3.41 removed its `completion` command; add it back here
+  # (`acli completion fish`) once a release restores it.
   completions = pkgs.runCommand "generated-fish-completions" { } ''
     dir=$out/share/fish/vendor_completions.d
     mkdir -p $dir
     export HOME=$TMPDIR INFISICAL_DISABLE_UPDATE_CHECK=true
     ${pkgs.infisical}/bin/infisical completion fish > $dir/infisical.fish
-    ${pkgs.acli.unwrapped or pkgs.acli-unwrapped}/bin/acli completion fish > $dir/acli.fish
   '';
   # gh extensions from nixpkgs instead of `gh extension install`, so they move
   # with `nix flake update`. gh only looks in ~/.local/share/gh/extensions,

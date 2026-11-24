@@ -6,6 +6,8 @@ Run from the repo root: python3 -m unittest discover -s theme/tests
 import json
 import os
 import re
+import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -605,6 +607,56 @@ class ShippedTargetsTest(unittest.TestCase):
         env = self.fake_tools(pkill="exit 1")  # exit 1: no process matched
         result = run_shipped_hook("40-ghostty", env)
         self.assertEqual((result.returncode, self.calls), (0, ["pkill -USR2 -x ghostty"]))
+
+    def test_every_nvim_lua_is_valid_lua(self) -> None:
+        files = [*SHIPPED_CONFIG.glob("themes/*/nvim.lua"), self.out / "nvim.lua"]
+        self.assertGreaterEqual(len(files), 5)  # four native ports and the rendered template
+        subprocess.run(["luac", "-p", *files], check=True)
+
+    def test_nvim_template_maps_the_palette_onto_base16(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            folder = Path(scratch) / "themes" / "no-native-port"
+            folder.mkdir(parents=True)
+            shutil.copy(SHIPPED_CONFIG / "themes" / "tokyo-night" / "colors.toml", folder)
+            out = Path(scratch) / "out"
+            out.mkdir()
+            theme.render_theme(theme.load_palette(folder), SHIPPED_CONFIG / "templates", out)
+            lua = (out / "nvim.lua").read_text()
+        for slot, colour in {
+            "base00": "#1a1b26",
+            "base05": "#c0caf5",
+            "base0D": "#7aa2f7",
+            "base0F": "#764f3f",
+        }.items():
+            self.assertRegex(lua, rf'{slot}\s*=\s*"{colour}"')
+        self.assertIn('vim.o.background = "dark"', lua)
+
+    def nvim_env(self, sockets: list[str], nvim: str) -> dict[str, str]:
+        runtime = self.out.parent / "runtime"
+        runtime.mkdir()
+        for name in sockets:
+            server = socket.socket(socket.AF_UNIX)
+            server.bind(str(runtime / name))
+            self.addCleanup(server.close)
+        (runtime / "nvim.stale").write_text("")  # a plain file, not a socket: ignored
+        return {**self.fake_tools(nvim=nvim), "XDG_RUNTIME_DIR": str(runtime)}
+
+    def test_nvim_hook_reruns_the_theme_in_every_running_nvim(self) -> None:
+        env = self.nvim_env(["nvim.100.0", "nvim.200.0"], "exit 0")
+        result = run_shipped_hook("50-nvim", env)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        runtime = env["XDG_RUNTIME_DIR"]
+        expr = f"luaeval('dofile(_A)', '{self.out}/nvim.lua')"
+        self.assertEqual(
+            self.calls,
+            [f"nvim --server {runtime}/nvim.{pid}.0 --remote-expr {expr}" for pid in (100, 200)],
+        )
+
+    def test_nvim_hook_reports_an_nvim_that_does_not_answer_but_does_not_fail(self) -> None:
+        env = self.nvim_env(["nvim.100.0"], "exit 1")
+        result = run_shipped_hook("50-nvim", env)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("nvim.100.0 did not reload", result.stderr)
 
     def test_hyprland_hook_skips_outside_hyprland(self) -> None:
         env = {k: v for k, v in os.environ.items() if k != "HYPRLAND_INSTANCE_SIGNATURE"}

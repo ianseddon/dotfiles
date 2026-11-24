@@ -3,7 +3,12 @@ local gh = function(x)
 end
 
 vim.pack.add({
+	-- Colour schemes: the theme's nvim.lua picks one (lua/plugins/theme.lua).
 	gh("rebelot/kanagawa.nvim"),
+	gh("folke/tokyonight.nvim"),
+	gh("sainnhe/gruvbox-material"),
+	gh("nyoom-engineering/oxocarbon.nvim"),
+	gh("echasnovski/mini.base16"),
 	gh("nvim-lua/plenary.nvim"),
 	gh("ibhagwan/fzf-lua"),
 	gh("nvim-treesitter/nvim-treesitter"),
@@ -37,7 +42,7 @@ require("config.keymaps")
 require("config.autocmds")
 
 -- plugins
-require("plugins.kanagawa")
+require("plugins.theme")
 require("plugins.treesitter")
 require("plugins.gitsigns")
 require("plugins.neo-tree")

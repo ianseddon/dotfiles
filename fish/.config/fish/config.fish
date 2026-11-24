@@ -19,12 +19,12 @@ set -gx MANPAGER "sh -c 'awk '\''{ gsub(/\x1B\[[0-9;]*m/, \"\", \$0); gsub(/.\x0
 set -gx BUN_INSTALL $HOME/.bun
 set -gx PNPM_HOME $HOME/.local/share/pnpm
 
-# FZF - Kanagawa theme
+# fzf in the terminal's 16 colours, so it follows the theme (-1: the default fg/bg;
+# 0: the theme's darker background, for the current and selected lines).
 set -gx FZF_DEFAULT_OPTS "\
-  --color=bg+:#2A2A37,bg:#1F1F28,spinner:#E6C384,hl:#E46876 \
-  --color=fg:#DCD7BA,header:#E46876,info:#957FB8,pointer:#7E9CD8 \
-  --color=marker:#E6C384,fg+:#DCD7BA,prompt:#7E9CD8,hl+:#FF5D62 \
-  --color=selected-bg:#363646"
+  --color=fg:-1,bg:-1,fg+:-1,bg+:0,selected-bg:0 \
+  --color=hl:1,hl+:9,header:1,info:5,pointer:4,prompt:4 \
+  --color=marker:11,spinner:11"
 
 # PATH
 

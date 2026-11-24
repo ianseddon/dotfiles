@@ -1,6 +1,6 @@
 # Spec: app-themes — V1
 
-Status: proposed. Module `app-themes` in the [capability map](README.md). The terminals (herdr-app and Ghostty), bat, delta and lualine shipped first, in [SPEC-fonts-and-terminals.md](SPEC-fonts-and-terminals.md). This spec covers the rest.
+Status: approved 2026-11-24. Module `app-themes` in the [capability map](README.md). The terminals (herdr-app and Ghostty), bat, delta and lualine shipped first, in [SPEC-fonts-and-terminals.md](SPEC-fonts-and-terminals.md). This spec covers the rest.
 
 ## Objective
 

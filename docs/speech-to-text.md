@@ -52,20 +52,9 @@ systemctl --user status voxtype
 journalctl --user -u voxtype -f
 ```
 
-## Optional Waybar status
+## Bar status
 
-After the core flow proves useful, add Voxtype's native Waybar module directly to the primary monitor:
-
-```jsonc
-"custom/voxtype": {
-    "exec": "voxtype status --follow --extended --format json --icon-theme nerd-font",
-    "return-type": "json",
-    "format": "{}",
-    "tooltip": true
-}
-```
-
-No status wrapper is needed: upstream explicitly supports this command. Omarchy's wrapper mainly handles optional installation and Quickshell child cleanup.
+The Quickshell bar shows dictation only while it happens: a red mic that pulses while recording, and a spinner while transcribing. It follows `voxtype status --follow --format json` (see [desktop-shell/SPEC-bar.md](desktop-shell/SPEC-bar.md)). Upstream supports this command for status bars, so no wrapper is needed.
 
 ## Deliberately skipped
 
@@ -75,7 +64,6 @@ No status wrapper is needed: upstream explicitly supports this command. Omarchy'
 - Custom systemd unit: `voxtype setup systemd` owns the service lifecycle upstream.
 - Post-processing through an LLM: adds latency and failure modes before a need is demonstrated.
 - Omarchy install/remove wrappers, hooks, menus, and shell plugin framework: those solve distro concerns absent from these Stow dotfiles.
-- Waybar changes in the first pass: the transcription flow should be validated before adding permanent bar UI.
 
 ## Sources
 

@@ -1,6 +1,6 @@
 # Spec: bar — V1
 
-Status: approved 2026-11-24. Module `bar` in the [capability map](README.md). Builds on [SPEC-shell-core.md](SPEC-shell-core.md).
+Status: implemented 2026-11-24. Module `bar` in the [capability map](README.md). Builds on [SPEC-shell-core.md](SPEC-shell-core.md).
 
 ## Objective
 

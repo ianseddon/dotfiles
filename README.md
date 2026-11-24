@@ -21,7 +21,7 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 | `agents` | `~/AGENTS.md`, shared skills, `nexus-skills` | ✓ | ✓ |
 | `pi`, `claude` | pi and Claude Code settings | ✓ | ✓ |
 | `herdr`, `worktrunk`, `hunk`, `tuicr` | Workspaces, worktrees, and review | ✓ | ✓ |
-| `hyprland`, `waybar`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
+| `hyprland`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
 | `theme` | The `theme` command: colour themes and fonts (see [Theme](#theme)) | ✓ | |
 | `quickshell` | The desktop shell (see [Shell](#shell)) | ✓ | |
 | `proton-pass` | SSH agent serving keys from Proton Pass | ✓ | |
@@ -175,7 +175,7 @@ shellcheck theme/.config/theme/hooks/*
 
 ## Shell
 
-The desktop shell is [Quickshell](https://quickshell.org/) (`sudo pacman -S quickshell`). The design is in [docs/desktop-shell/](docs/desktop-shell/). So far it has the shared theme and style values, and a theme preview; Waybar is still the bar.
+The desktop shell is [Quickshell](https://quickshell.org/) (`sudo pacman -S quickshell`). The design is in [docs/desktop-shell/](docs/desktop-shell/). It is the bar (replacing Waybar), plus the shared theme and style values and a theme preview. The bar is calm at rest and shows detail on hover or click; values and indicators appear by themselves only when something needs attention (see [SPEC-bar.md](docs/desktop-shell/SPEC-bar.md)).
 
 ```bash
 stow --target="$HOME" quickshell             # folded: ~/.config/quickshell links to the package

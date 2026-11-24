@@ -11,14 +11,19 @@ Each module gets its own spec in this directory (`SPEC-<module id>.md`), written
 | `theme` | Palette format, the `theme` command, templates, and the Hyprland, hyprlock, Quickshell and greeter targets. Ships the first palettes. | — |
 | `app-themes` | Templates or native ports for herdr-app, Ghostty, nvim, fish, herdr, gh-dash, tuicr and bat. The terminal palette (herdr-app, Ghostty) shipped first, with fonts: [SPEC-fonts-and-terminals.md](SPEC-fonts-and-terminals.md). | `theme` |
 | `shell-core` | The `quickshell` Stow package, `shell.qml`, one window per monitor, IPC, the systemd user service that replaces `launch-waybar.sh`, and shell style settings (radius, spacing, bar shape). Fonts come from fontconfig's `monospace` and `sans-serif` aliases, which `theme font` sets. | `theme` |
-| `bar` | Pill bar: workspaces, window title, media, CPU, memory and temperature, volume, clock, tray, power button. DP-3 (vertical) keeps a minimal variant. | `theme`, `shell-core` |
+| `bar` | Pill bar, minimal at rest and informative when needed: workspaces, clock, media, status icons with detail on demand, a tray drawer, and indicators that appear only when needed (dictation, something's wrong). DP-3 (portrait) keeps workspaces and the clock. | `theme`, `shell-core` |
 | `launcher` | App search on `SUPER+SPACE`, replacing Rofi. | `theme`, `shell-core` |
 | `notifications` | Notification server replacing swaync: popups, history, do not disturb. | `theme`, `shell-core` |
 | `osd` | Volume popup on change. | `theme`, `shell-core` |
 | `power-menu` | Lock, log out, suspend, reboot, shut down. Replaces `hyprshutdown`. | `theme`, `shell-core` |
+| `connectivity` | Themed Bluetooth and network panels replacing nm-applet and blueman. | `bar` |
+| `bar-agents` | Agents waiting on you (herdr, on every machine) and agent usage limits. | `bar` |
+| `bar-info` | GitHub review requests, weather, and updates. | `bar` |
 | `greeter` | Quickshell login screen on greetd, replacing tuigreet. | `theme`; reuses components from `bar` and `power-menu` |
 
-Build order: `theme` → `app-themes` → `shell-core` → `bar` → `launcher` → `notifications`, `osd`, `power-menu` (any order) → `greeter`.
+Build order: `theme` → `app-themes` → `shell-core` → `bar` → `launcher` → `notifications`, `osd`, `power-menu` → `connectivity`, `bar-agents`, `bar-info` (any order) → `greeter`.
+
+The three bar follow-ups were split out of `bar` on 2026-11-24, after surveying other shells: each needs its own data work.
 
 ## Decisions
 

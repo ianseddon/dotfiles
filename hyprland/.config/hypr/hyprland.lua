@@ -9,5 +9,6 @@ require("monitors")
 require("input")
 require("bindings")
 require("looknfeel")
+require("theme") -- after looknfeel: the theme's colours win
 require("autostart")
 require("windows")

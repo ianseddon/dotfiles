@@ -1,0 +1,14 @@
+#!/bin/sh
+# Give the login screen the current palette. It runs as the greeter user, which
+# cannot read ~, so it reads a copy. One-time setup (see the dotfiles README):
+#   sudo install -d -o "$USER" -g greeter -m 0750 /var/lib/greeter-theme
+set -eu
+dir=${THEME_GREETER_DIR:-/var/lib/greeter-theme}
+if [ ! -d "$dir" ]; then
+	echo "theme: $dir does not exist, so the login screen keeps its old theme (see the README)" >&2
+	exit 0
+fi
+for file in name palette.json; do
+	cp "$THEME_CURRENT/$file" "$dir/.$file.tmp"
+	mv "$dir/.$file.tmp" "$dir/$file"
+done

@@ -5,6 +5,7 @@ Run from the repo root: python3 -m unittest discover -s theme/tests
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,8 @@ SHIPPED_CONFIG = PACKAGE / ".config" / "theme"
 
 
 def load_script() -> ModuleType:
+    # Bytecode next to the script would be stowed into ~/.local/bin.
+    sys.dont_write_bytecode = True
     loader = SourceFileLoader("theme_cli", str(SCRIPT))
     spec = spec_from_loader("theme_cli", loader)
     assert spec is not None
@@ -381,6 +384,66 @@ class ListAndCurrentTest(SandboxTestCase):
         result = self.box.run("current")
         self.assertEqual(result.returncode, 1)
         self.assertIn("no theme set yet", result.stderr)
+
+
+def run_shipped_hook(name: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    hook = SHIPPED_CONFIG / "hooks" / name
+    return subprocess.run([hook, "tokyo-night"], env=env, capture_output=True, text=True, check=False)
+
+
+class ShippedTargetsTest(unittest.TestCase):
+    """The templates and hooks that ship with the package, rendered with a shipped theme."""
+
+    out: Path
+
+    @override
+    def setUp(self) -> None:
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        self.out = Path(scratch.name) / "current"
+        self.out.mkdir()
+        palette = theme.load_palette(SHIPPED_CONFIG / "themes" / "tokyo-night")
+        theme.render_theme(palette, SHIPPED_CONFIG / "templates", self.out)
+
+    def test_hyprland_lua_is_valid_lua_with_the_accent_border(self) -> None:
+        lua = self.out / "hyprland.lua"
+        subprocess.run(["luac", "-p", lua], check=True)
+        self.assertRegex(lua.read_text(), r'\bactive_border\s*=\s*"rgba\(7aa2f7ee\)"')
+
+    def test_hyprlock_conf_defines_the_variables_hyprlock_conf_uses(self) -> None:
+        def variables(text: str) -> tuple[set[str], set[str]]:
+            """(defined, used) hyprlang variables, ignoring comment lines."""
+            lines = [line for line in text.splitlines() if not line.lstrip().startswith("#")]
+            defined = {m.group(1) for line in lines if (m := re.match(r"\s*\$(\w+)\s*=", line))}
+            used = {m for line in lines for m in re.findall(r"\$(\w+)", line.split("=", 1)[-1])}
+            return defined, used
+
+        generated = (self.out / "hyprlock.conf").read_text()
+        hyprlock = (PACKAGE.parent / "hyprland" / ".config" / "hypr" / "hyprlock.conf").read_text()
+        from_theme, _ = variables(generated)
+        local, used = variables(hyprlock)
+        self.assertEqual(used - local - {"HOME"}, from_theme)
+        self.assertIn("$accent = rgba(7aa2f7ff)", generated)
+
+    def test_hyprland_hook_skips_outside_hyprland(self) -> None:
+        env = {k: v for k, v in os.environ.items() if k != "HYPRLAND_INSTANCE_SIGNATURE"}
+        result = run_shipped_hook("10-hyprland", env)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+
+    def test_greeter_hook_copies_the_palette(self) -> None:
+        greeter = self.out.parent / "greeter"
+        greeter.mkdir()
+        env = {**os.environ, "THEME_CURRENT": str(self.out), "THEME_GREETER_DIR": str(greeter)}
+        result = run_shipped_hook("90-greeter", env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(sorted(p.name for p in greeter.iterdir()), ["name", "palette.json"])
+        self.assertEqual((greeter / "name").read_text(), "tokyo-night\n")
+
+    def test_greeter_hook_without_its_directory_is_a_notice_not_a_failure(self) -> None:
+        env = {**os.environ, "THEME_CURRENT": str(self.out), "THEME_GREETER_DIR": str(self.out / "absent")}
+        result = run_shipped_hook("90-greeter", env)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("does not exist", result.stderr)
 
 
 class ShippedThemesTest(unittest.TestCase):

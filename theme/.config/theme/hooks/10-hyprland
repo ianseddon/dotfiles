@@ -1,0 +1,5 @@
+#!/bin/sh
+# Reload Hyprland so it reads the new border colours. Outside a Hyprland session
+# (a TTY, an SSH login) there is nothing to reload.
+[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || exit 0
+exec hyprctl reload >/dev/null

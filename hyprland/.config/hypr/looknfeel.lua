@@ -15,10 +15,7 @@ hl.config({
         gaps_in  = 3,
         gaps_out = 7,
 
-        col = {
-            active_border   = "rgba(A7C080ee)",
-            inactive_border = "rgba(00000000)",
-        },
+        -- Border colours come from the current theme (theme.lua).
 
         -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
         resize_on_border = false,

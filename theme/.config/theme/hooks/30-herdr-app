@@ -1,6 +1,8 @@
 #!/bin/sh
 # herdr-app: install the theme's palette as themes/current.json and select it, and
 # give it the fonts fontconfig resolves (it does not read fontconfig's aliases).
+# Its terminals default to weight 500 (Medium), heavier than every other app, which
+# draw a font's Regular: use 400 unless a weight was chosen in the app.
 # settings.json is the app's own state, which it reloads live; other keys are kept.
 set -eu
 home=${HERDR_APP_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/herdr-app}
@@ -20,7 +22,7 @@ fi
 settings=$home/settings.json
 [ -f "$settings" ] || echo '{}' >"$settings"
 jq --arg mono "$(fc-match -f '%{family[0]}' monospace)" --arg sans "$(fc-match -f '%{family[0]}' sans-serif)" \
-	'.font = $mono | .ui_font = $sans' "$settings" >"$settings.tmp"
+	'.font = $mono | .ui_font = $sans | .font_weight //= 400' "$settings" >"$settings.tmp"
 replace "$settings" "$settings.tmp"
 
 # Selecting the theme also reloads it. When the app isn't running, it picks the

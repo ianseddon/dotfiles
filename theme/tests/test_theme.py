@@ -574,8 +574,17 @@ class ShippedTargetsTest(unittest.TestCase):
             json.loads((self.out / "herdr-app.json").read_text()),
         )
         settings = json.loads((home / "settings.json").read_text())
-        self.assertEqual(settings, {"zoom": 1.2, "font": "Geist Mono", "ui_font": "Inter"})
+        self.assertEqual(
+            settings, {"zoom": 1.2, "font": "Geist Mono", "ui_font": "Inter", "font_weight": 400}
+        )
         self.assertIn("herdr-app do app.theme --name current", self.calls)
+
+    def test_herdr_app_hook_keeps_a_weight_chosen_in_the_app(self) -> None:
+        home = self.out.parent / "herdr-app"
+        home.mkdir()
+        (home / "settings.json").write_text('{"font_weight": 300}\n')
+        run_shipped_hook("30-herdr-app", self.herdr_env(home))
+        self.assertEqual(json.loads((home / "settings.json").read_text())["font_weight"], 300)
 
     def test_herdr_app_hook_skips_when_the_app_was_never_opened(self) -> None:
         home = self.out.parent / "absent"

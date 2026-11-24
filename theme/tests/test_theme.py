@@ -269,5 +269,110 @@ class CheckCommandTest(SandboxTestCase):
         self.assertFalse(self.box.state.exists())
 
 
+class SetCommandTest(SandboxTestCase):
+    @override
+    def setUp(self) -> None:
+        super().setUp()
+        self.box.add_template("hyprland.lua", "{{ accent }}\n")
+        self.box.add_theme("tokyo-night")
+        self.box.add_theme("oxocarbon", palette_toml(accent="#ff7eb6"))
+
+    @property
+    def current(self) -> Path:
+        return self.box.state / "current"
+
+    def test_set_switches_current(self) -> None:
+        result = self.box.run("set", "tokyo-night")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.current.is_symlink())
+        self.assertEqual((self.current / "name").read_text(), "tokyo-night\n")
+        self.assertEqual((self.current / "hyprland.lua").read_text(), "#7aa2f7\n")
+
+    def test_link_is_relative_so_the_state_dir_can_move(self) -> None:
+        self.box.run("set", "tokyo-night")
+        self.assertFalse(self.current.readlink().is_absolute())
+
+    def test_switching_again_keeps_exactly_one_render(self) -> None:
+        self.box.run("set", "tokyo-night")
+        self.box.run("set", "oxocarbon")
+        self.assertEqual((self.current / "hyprland.lua").read_text(), "#ff7eb6\n")
+        renders = list((self.box.state / "renders").iterdir())
+        self.assertEqual([r.resolve() for r in renders], [self.current.resolve()])
+
+    def test_render_failure_changes_nothing(self) -> None:
+        self.box.run("set", "tokyo-night")
+        before = self.current.resolve()
+        self.box.add_template("broken.conf", "{{ nope }}\n")
+        result = self.box.run("set", "oxocarbon")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("broken.conf.tpl:1: unknown palette key 'nope'", result.stderr)
+        self.assertEqual(self.current.resolve(), before)
+        self.assertEqual((self.current / "name").read_text(), "tokyo-night\n")
+        self.assertEqual(list((self.box.state / "renders").iterdir()), [before])
+
+    def test_unknown_theme(self) -> None:
+        result = self.box.run("set", "nope")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("no theme named 'nope'", result.stderr)
+        self.assertFalse(self.current.exists())
+
+    def test_hooks_run_in_name_order_with_theme_name_and_current_dir(self) -> None:
+        log = self.box.state_home / "hooks.log"
+        for name in ("20-second", "10-first"):
+            self.box.add_hook(name, f'echo "{name} $1 $THEME_CURRENT" >> "{log}"\n')
+        result = self.box.run("set", "oxocarbon")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            log.read_text().splitlines(),
+            [f"10-first oxocarbon {self.current}", f"20-second oxocarbon {self.current}"],
+        )
+
+    def test_failing_hook_exits_2_names_the_hook_and_others_still_run(self) -> None:
+        marker = self.box.state_home / "ran"
+        self.box.add_hook("10-broken", "echo reload failed >&2\nexit 3\n")
+        self.box.add_hook("20-fine", f'touch "{marker}"\n')
+        result = self.box.run("set", "tokyo-night")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("reload failed", result.stderr)
+        self.assertIn("hook 10-broken failed (exit 3)", result.stderr)
+        self.assertTrue(marker.exists())
+        self.assertEqual((self.current / "name").read_text(), "tokyo-night\n")
+
+    def test_non_executable_hooks_are_skipped(self) -> None:
+        marker = self.box.state_home / "ran"
+        self.box.add_hook("10-off", f'touch "{marker}"\n')
+        (self.box.config / "hooks" / "10-off").chmod(0o644)
+        result = self.box.run("set", "tokyo-night")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(marker.exists())
+
+
+class ListAndCurrentTest(SandboxTestCase):
+    @override
+    def setUp(self) -> None:
+        super().setUp()
+        self.box.add_theme("tokyo-night")
+        self.box.add_theme("oxocarbon")
+        (self.box.config / "themes" / "not-a-theme").mkdir()
+
+    def test_list_before_any_set(self) -> None:
+        result = self.box.run("list")
+        self.assertEqual(result.stdout, "  oxocarbon\n  tokyo-night\n")
+
+    def test_list_marks_current(self) -> None:
+        self.box.run("set", "tokyo-night")
+        self.assertEqual(self.box.run("list").stdout, "  oxocarbon\n* tokyo-night\n")
+
+    def test_current(self) -> None:
+        self.box.run("set", "oxocarbon")
+        result = self.box.run("current")
+        self.assertEqual((result.returncode, result.stdout), (0, "oxocarbon\n"))
+
+    def test_current_before_any_set(self) -> None:
+        result = self.box.run("current")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("no theme set yet", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

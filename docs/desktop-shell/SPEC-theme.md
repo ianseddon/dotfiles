@@ -1,6 +1,6 @@
 # Spec: theme — V1
 
-Status: proposed. Module `theme` in the [capability map](README.md).
+Status: approved 2026-11-24. Module `theme` in the [capability map](README.md).
 
 ## Objective
 
@@ -105,7 +105,7 @@ A template is the output file with `.tpl` appended, for example `hyprland.lua.tp
 - An unknown key fails the render. The error names the template, the line and the key.
 - `{{ mode }}` and any string-valued extra key render as is.
 
-**Overrides:** a theme folder may contain a file with the same name as a template's output, for example `themes/tokyo-night/nvim.lua`. That file is copied verbatim instead of rendering the template. This is how a theme picks a native port.
+**Theme files:** every other file at the top level of a theme folder is copied into the render as is. A template renders only the outputs the folder does not already provide. For example, `themes/tokyo-night/nvim.lua` replaces the output of `nvim.lua.tpl`. This is how a theme picks a native port, or ships a file that has no template. `name` and `palette.json` are generated, so a theme folder may not contain them. Subfolders are ignored.
 
 **`palette.json`:** this file is always written, with every key in the palette, whether or not a template exists. Quickshell and the greeter read it.
 
@@ -120,8 +120,8 @@ A template is the output file with `.tpl` appended, for example `hyprland.lua.tp
 
 ```
 ~/.local/state/theme/
-  current -> renders/tokyo-night.3     # symlink; replaced atomically
-  renders/tokyo-night.3/
+  current -> renders/tokyo-night.k3x9  # relative symlink; replaced atomically
+  renders/tokyo-night.k3x9/
     name                               # "tokyo-night"
     palette.json
     hyprland.lua
@@ -238,8 +238,8 @@ def render(template: str, palette: Palette, *, source: Path) -> str:
 - **Contrast checks on palettes.**
 - **Per-theme wallpapers and light mode.**
 
-## Open questions
+## Resolved questions
 
-1. **Gruvbox Material:** use the medium background with the `material` foreground (the upstream defaults), or the hard background?
-2. **Tokyo Night:** use `night` (the darkest), `storm` or `moon`?
-3. **Command name:** `theme` is free on this system. Is that name fine, or do you prefer something more specific such as `theme-set`?
+1. **Gruvbox Material:** the medium background with the `material` foreground, the upstream defaults.
+2. **Tokyo Night:** `night`.
+3. **Command name:** `theme`.

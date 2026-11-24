@@ -8,10 +8,12 @@ Design: docs/desktop-shell/SPEC-theme.md in the dotfiles repo.
 """
 
 import argparse
+import fcntl
 import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import tomllib
@@ -50,6 +52,8 @@ MODES = ("dark", "light")
 GENERATED = ("name", "palette.json")
 PALETTE_FILE = "colors.toml"
 TEMPLATE_SUFFIX = ".tpl"
+# A reload that takes longer than this is treated as hung.
+HOOK_TIMEOUT_SECONDS = 10
 
 THEME_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 HEX_COLOUR = re.compile(r"#[0-9a-fA-F]{6}")
@@ -170,6 +174,18 @@ class Paths:
     def templates(self) -> Path:
         return self.config / "templates"
 
+    @property
+    def hooks(self) -> Path:
+        return self.config / "hooks"
+
+    @property
+    def current(self) -> Path:
+        return self.state / "current"
+
+    @property
+    def renders(self) -> Path:
+        return self.state / "renders"
+
 
 def theme_names(paths: Paths) -> list[str]:
     if not paths.themes.is_dir():
@@ -184,6 +200,89 @@ def find_theme(paths: Paths, name: str) -> Path:
     return folder
 
 
+def current_name(paths: Paths) -> str | None:
+    try:
+        return (paths.current / "name").read_text().strip()
+    except FileNotFoundError:
+        return None
+
+
+def switch(paths: Paths, palette: Palette) -> None:
+    """Render into a fresh folder, then point `current` at it in one rename.
+
+    Readers see the old theme or the new one, never a mix. On a render error the
+    new folder is removed and `current` is left alone.
+    """
+    paths.renders.mkdir(parents=True, exist_ok=True)
+    with (paths.state / "lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        target = Path(tempfile.mkdtemp(prefix=f"{palette.name}.", dir=paths.renders))
+        try:
+            render_theme(palette, paths.templates, target)
+        except BaseException:
+            shutil.rmtree(target)
+            raise
+        target.chmod(0o755)  # mkdtemp makes it 0700; the greeter hook and others read it
+
+        link = paths.state / f".current.{os.getpid()}"
+        link.unlink(missing_ok=True)
+        link.symlink_to(target.relative_to(paths.state))
+        link.replace(paths.current)
+
+        for old in paths.renders.iterdir():
+            if old != target:
+                shutil.rmtree(old)
+
+
+def run_hooks(paths: Paths, name: str) -> list[str]:
+    """Run each executable hook in name order. Returns a message per failed hook."""
+    if not paths.hooks.is_dir():
+        return []
+    env = {**os.environ, "THEME_CURRENT": str(paths.current)}
+    failures: list[str] = []
+    for hook in sorted(paths.hooks.iterdir()):
+        if not hook.is_file() or not os.access(hook, os.X_OK):
+            continue
+        try:
+            code = subprocess.run([hook, name], env=env, timeout=HOOK_TIMEOUT_SECONDS, check=False).returncode
+        except subprocess.TimeoutExpired:
+            failures.append(f"hook {hook.name} timed out after {HOOK_TIMEOUT_SECONDS}s")
+        except OSError as error:
+            failures.append(f"hook {hook.name} could not start: {error}")
+        else:
+            if code != 0:
+                failures.append(f"hook {hook.name} failed (exit {code})")
+    return failures
+
+
+def cmd_set(paths: Paths, name: str) -> int:
+    try:
+        switch(paths, load_palette(find_theme(paths, name)))
+    except (ThemeError, OSError) as error:
+        print(f"theme: {error}", file=sys.stderr)
+        return 1
+    failures = run_hooks(paths, name)
+    for failure in failures:
+        print(f"theme: switched to {name}, but {failure}", file=sys.stderr)
+    return 2 if failures else 0
+
+
+def cmd_list(paths: Paths) -> int:
+    current = current_name(paths)
+    for name in theme_names(paths):
+        print(f"{'*' if name == current else ' '} {name}")
+    return 0
+
+
+def cmd_current(paths: Paths) -> int:
+    name = current_name(paths)
+    if name is None:
+        print("theme: no theme set yet; run `theme set <name>`", file=sys.stderr)
+        return 1
+    print(name)
+    return 0
+
+
 def cmd_check(paths: Paths, names: list[str]) -> int:
     failed = False
     for name in names or theme_names(paths):
@@ -191,7 +290,7 @@ def cmd_check(paths: Paths, names: list[str]) -> int:
             palette = load_palette(find_theme(paths, name))
             with tempfile.TemporaryDirectory() as scratch:
                 render_theme(palette, paths.templates, Path(scratch))
-        except ThemeError as error:
+        except (ThemeError, OSError) as error:
             print(f"theme: {error}", file=sys.stderr)
             failed = True
         else:
@@ -202,14 +301,24 @@ def cmd_check(paths: Paths, names: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="theme", description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("list", help="list themes; the current one is marked")
+    commands.add_parser("current", help="print the current theme's name")
+    set_ = commands.add_parser("set", help="switch to a theme and reload what uses it")
+    set_.add_argument("name")
     check = commands.add_parser("check", help="validate and render without switching")
     check.add_argument("names", nargs="*", metavar="name")
     args = parser.parse_args(argv)
 
     paths = Paths.from_env()
-    if args.command == "check":
-        return cmd_check(paths, args.names)
-    return 1
+    match args.command:
+        case "list":
+            return cmd_list(paths)
+        case "current":
+            return cmd_current(paths)
+        case "set":
+            return cmd_set(paths, args.name)
+        case _:
+            return cmd_check(paths, args.names)
 
 
 if __name__ == "__main__":

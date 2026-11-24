@@ -224,5 +224,6 @@ The `waybar` pacman package stays installed until you remove it.
 - **`bar-info`:** GitHub review requests, weather and updates.
 - **`connectivity`:** themed Bluetooth and network panels replacing nm-applet and blueman.
 - **A per-app mixer in the volume popup.**
+- **A btop-style system popup** (history graphs, GPU, network and disk rates, top processes): considered and skipped on 2026-11-24. Live graphs and a process list cost CPU and GPU time while open, and the gauge's meters are enough.
 - **The notification indicator and do-not-disturb:** they belong to `notifications`.
 - **The `flush` and `island` bar shapes:** `Style.barShape` exists, but V1 implements pills only.

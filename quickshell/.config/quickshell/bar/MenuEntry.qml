@@ -92,13 +92,13 @@ Column {
         Loader {
             required property QsMenuEntry modelData
 
-            source: "MenuEntry.qml"
-            onLoaded: {
-                const child = item as MenuEntry;
-                child.entry = modelData;
-                child.depth = root.depth + 1;
-                child.activated.connect(root.activated);
-            }
+            // MenuEntry's entry is required, so it has to be set as the item is
+            // created (setSource with initial properties), not after loading.
+            Component.onCompleted: setSource("MenuEntry.qml", {
+                entry: modelData,
+                depth: root.depth + 1
+            })
+            onLoaded: (item as MenuEntry).activated.connect(root.activated)
         }
     }
 }

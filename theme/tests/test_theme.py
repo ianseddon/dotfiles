@@ -386,6 +386,82 @@ class ListAndCurrentTest(SandboxTestCase):
         self.assertIn("no theme set yet", result.stderr)
 
 
+class FontCommandTest(SandboxTestCase):
+    """`theme font`, with fake fc-list and fc-match on PATH so the tests don't depend on installed fonts."""
+
+    @override
+    def setUp(self) -> None:
+        super().setUp()
+        bin_dir = self.box.state_home.parent / "bin"
+        bin_dir.mkdir()
+        self.write_tool(bin_dir / "fc-list", "printf 'Inter\\nJetBrains Mono,JetBrains Mono NL\\nGeist\\n'")
+        self.write_tool(
+            bin_dir / "fc-match", 'case "$*" in *monospace*) echo "JetBrains Mono";; *) echo Inter;; esac'
+        )
+        self.box.env["PATH"] = f"{bin_dir}:{self.box.env['PATH']}"
+
+    @staticmethod
+    def write_tool(path: Path, body: str) -> None:
+        path.write_text(f"#!/bin/sh\n{body}\n")
+        path.chmod(0o755)
+
+    @property
+    def fonts_conf(self) -> Path:
+        return self.box.state / "fonts.conf"
+
+    def test_show_prints_what_fontconfig_resolves(self) -> None:
+        result = self.box.run("font")
+        self.assertEqual((result.returncode, result.stdout), (0, "mono: JetBrains Mono\nsans: Inter\n"))
+
+    def test_set_mono_writes_a_fontconfig_preference_with_the_icon_fallback(self) -> None:
+        result = self.box.run("font", "mono", "JetBrains Mono")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        conf = self.fonts_conf.read_text()
+        mono = conf.index("<family>monospace</family>")
+        self.assertLess(mono, conf.index("<family>JetBrains Mono</family>"))
+        self.assertLess(conf.index("JetBrains Mono"), conf.index("<family>Symbols Nerd Font</family>"))
+        self.assertNotIn("sans-serif", conf)
+
+    def test_setting_sans_keeps_the_mono_choice(self) -> None:
+        self.box.run("font", "mono", "JetBrains Mono")
+        self.box.run("font", "sans", "Geist")
+        conf = self.fonts_conf.read_text()
+        self.assertIn("<family>JetBrains Mono</family>", conf)
+        self.assertIn("<family>Geist</family>", conf)
+
+    def test_family_match_ignores_case_and_writes_the_installed_name(self) -> None:
+        self.box.run("font", "mono", "jetbrains mono nl")
+        self.assertIn("<family>JetBrains Mono NL</family>", self.fonts_conf.read_text())
+
+    def test_missing_family_exits_1_and_changes_nothing(self) -> None:
+        self.box.run("font", "mono", "JetBrains Mono")
+        before = self.fonts_conf.read_text()
+        result = self.box.run("font", "mono", "Comic Mono")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("no installed font family 'Comic Mono'", result.stderr)
+        self.assertEqual(self.fonts_conf.read_text(), before)
+
+    def test_names_are_xml_escaped(self) -> None:
+        self.write_tool(self.box.state_home.parent / "bin" / "fc-list", "echo 'A&B <Mono>'")
+        self.box.run("font", "mono", "A&B <Mono>")
+        self.assertIn("<family>A&amp;B &lt;Mono&gt;</family>", self.fonts_conf.read_text())
+
+    def test_hooks_run_with_the_current_theme(self) -> None:
+        self.box.add_theme("tokyo-night")
+        self.box.run("set", "tokyo-night")
+        log = self.box.state_home / "hooks.log"
+        self.box.add_hook("10-log", f'echo "[$1]" >> "{log}"\n')
+        result = self.box.run("font", "mono", "Geist")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(log.read_text(), "[tokyo-night]\n")
+
+    def test_hooks_get_an_empty_name_before_any_theme_is_set(self) -> None:
+        log = self.box.state_home / "hooks.log"
+        self.box.add_hook("10-log", f'echo "[$1]" >> "{log}"\n')
+        self.box.run("font", "mono", "Geist")
+        self.assertEqual(log.read_text(), "[]\n")
+
+
 def run_shipped_hook(name: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     hook = SHIPPED_CONFIG / "hooks" / name
     return subprocess.run([hook, "tokyo-night"], env=env, capture_output=True, text=True, check=False)

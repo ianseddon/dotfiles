@@ -9,8 +9,8 @@ Each module gets its own spec in this directory (`SPEC-<module id>.md`), written
 | Module id | Responsibility | Depends on |
 |---|---|---|
 | `theme` | Palette format, the `theme` command, templates, and the Hyprland, hyprlock, Quickshell and greeter targets. Ships the first palettes. | — |
-| `app-themes` | Templates or native ports for Ghostty, nvim, fish, herdr, gh-dash, tuicr and bat. | `theme` |
-| `shell-core` | The `quickshell` Stow package, `shell.qml`, one window per monitor, IPC, the systemd user service that replaces `launch-waybar.sh`, and shell style settings (fonts, radius, spacing, bar shape). | `theme` |
+| `app-themes` | Templates or native ports for herdr-app, Ghostty, nvim, fish, herdr, gh-dash, tuicr and bat. The terminal palette (herdr-app, Ghostty) shipped first, with fonts: [SPEC-fonts-and-terminals.md](SPEC-fonts-and-terminals.md). | `theme` |
+| `shell-core` | The `quickshell` Stow package, `shell.qml`, one window per monitor, IPC, the systemd user service that replaces `launch-waybar.sh`, and shell style settings (radius, spacing, bar shape). Fonts come from fontconfig's `monospace` and `sans-serif` aliases, which `theme font` sets. | `theme` |
 | `bar` | Pill bar: workspaces, window title, media, CPU, memory and temperature, volume, clock, tray, power button. DP-3 (vertical) keeps a minimal variant. | `theme`, `shell-core` |
 | `launcher` | App search on `SUPER+SPACE`, replacing Rofi. | `theme`, `shell-core` |
 | `notifications` | Notification server replacing swaync: popups, history, do not disturb. | `theme`, `shell-core` |

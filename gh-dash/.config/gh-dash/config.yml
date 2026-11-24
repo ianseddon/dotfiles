@@ -87,29 +87,30 @@ repoPaths:
   ianseddon/dotfiles: ~/dotfiles
   ":owner/:repo": ~/dev/github.com/:owner/:repo
 
-# Kanagawa Wave, mapped from kanagawa.nvim's palette
-# (https://github.com/rebelot/kanagawa.nvim, MIT) to match Ghostty, nvim, and tuicr.
+# The terminal's 16 ANSI colours (indices), so gh-dash follows the theme on every
+# machine: 0 is the theme's darker background, 7 its text, 8 its muted grey and
+# 15 its brightest text. Roles as in kanagawa.nvim's palette.
 theme:
   colors:
     text:
-      primary: "#DCD7BA"     # fujiWhite, Normal fg
-      secondary: "#C8C093"   # oldWhite
-      inverted: "#16161D"    # sumiInk0, text on colored pills
-      faint: "#727169"       # fujiGray, Comment
-      warning: "#FF9E3B"     # roninYellow, DiagnosticWarn
-      success: "#98BB6C"     # springGreen
-      error: "#E82424"       # samuraiRed, DiagnosticError
-      actor: "#7E9CD8"       # crystalBlue, @user in notifications
+      primary: "15"     # bright text
+      secondary: "7"    # text
+      inverted: "0"     # text on coloured pills
+      faint: "8"        # comments, metadata
+      warning: "3"
+      success: "2"
+      error: "1"
+      actor: "4"        # @user in notifications
     background:
-      selected: "#223249"    # waveBlue1, Visual; selected row, active tab, footer
+      selected: "0"     # selected row, active tab, footer
     border:
-      primary: "#54546D"     # sumiInk6, tab underline and sidebar
-      secondary: "#727169"   # fujiGray, tab separators
-      faint: "#2A2A37"       # sumiInk4, row separators and view switcher
+      primary: "8"      # tab underline and sidebar
+      secondary: "8"    # tab separators
+      faint: "0"        # row separators and view switcher
     icon:
-      newcontributor: "#98BB6C" # springGreen
-      contributor: "#7E9CD8"    # crystalBlue
-      collaborator: "#E6C384"   # carpYellow
-      member: "#E6C384"
-      owner: "#E6C384"
-      unknownrole: "#727169"    # fujiGray
+      newcontributor: "2"
+      contributor: "4"
+      collaborator: "3"
+      member: "3"
+      owner: "3"
+      unknownrole: "8"

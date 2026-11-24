@@ -1,5 +1,5 @@
-# Match neovim's Kanagawa theme and terminal background.
-theme = "kanagawa-wave"
+# Hunk's built-in theme from the terminal's colours, so it follows the theme.
+theme = "terminal"
 transparent_background = true
 tab_width = 2
 

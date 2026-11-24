@@ -84,6 +84,14 @@ nvim --server <socket> --remote-expr "execute('lua dofile(...)')"
 
 Each call has a 2-second timeout, so a busy nvim can't hang the switch. Because of that re-run, every `nvim.lua` must be safe to run again. lualine (`theme = "auto"`) and bufferline must follow the `ColorScheme` event; confirm both during implementation.
 
+## Findings during implementation
+
+- **tuicr's syntax colours:** tuicr ignores bat's `ansi` tmTheme encoding. With it, syntax colours stayed `#f59057` under both Kanagawa and Gruvbox Material. `terminal.toml` leaves `syntax_theme` out, so tuicr uses its bundled dark syntax theme. Its UI colours follow the theme live.
+- **tuicr's diff backgrounds:** the 16 ANSI colours have no tinted backgrounds, so added and removed lines use the 256-colour palette's darkest green (22) and red (52). These are fixed, not from the theme.
+- **hunk:** its `terminal` theme reads the terminal's colours when it starts, so it follows the theme after a restart, not live. Measured: a removed line's tint was `#605050` under Kanagawa and `#574c5b` under Tokyo Night.
+- **Claude Code:** `"dark-ansi"` is the documented value ("the dark theme using only your terminal's ANSI color palette").
+- **Not stowed on the desktop:** the tuicr and Claude Code packages. Their configs apply where they are stowed, which is the M75q.
+
 ## Success criteria
 
 1. **Colours change live.** On the desktop, in herdr-app, for each of the four themes, `theme set` changes these to the theme's colours without restarting them:

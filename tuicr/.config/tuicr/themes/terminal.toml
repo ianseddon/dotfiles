@@ -1,0 +1,54 @@
+# The terminal's 16 ANSI colours, so tuicr follows the theme (`theme set`) on every
+# machine. Names map to ANSI indices: black 0 (the theme's darker background),
+# red..cyan 1-6, gray 7 (text), darkgray 8 (muted), light* 9-14, white 15.
+panel_bg = "reset"
+bg_highlight = "black"
+fg_primary = "white"
+fg_secondary = "gray"
+fg_dim = "darkgray"
+
+# ANSI has no tinted backgrounds, so added and removed lines use the 256-colour
+# palette's darkest green and red: not from the theme, but quiet on any dark one.
+diff_add = "green"
+diff_add_bg = "22"
+diff_del = "red"
+diff_del_bg = "52"
+diff_context = "gray"
+diff_hunk_header = "lightmagenta"
+expanded_context_fg = "darkgray"
+
+syntax_add_bg = "22"
+syntax_del_bg = "52"
+
+file_added = "green"
+file_modified = "yellow"
+file_deleted = "red"
+file_renamed = "magenta"
+
+reviewed = "lightgreen"
+pending = "yellow"
+
+comment_note = "blue"
+comment_suggestion = "cyan"
+comment_issue = "lightred"
+comment_praise = "lightgreen"
+
+border_focused = "blue"
+border_unfocused = "darkgray"
+status_bar_bg = "black"
+cursor_color = "gray"
+cursor_line_bg = "black"
+branch_name = "magenta"
+help_indicator = "darkgray"
+
+message_info_fg = "black"
+message_info_bg = "blue"
+message_warning_fg = "black"
+message_warning_bg = "yellow"
+message_error_fg = "black"
+message_error_bg = "red"
+update_badge_fg = "black"
+update_badge_bg = "yellow"
+
+mode_fg = "black"
+mode_bg = "blue"

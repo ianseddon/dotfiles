@@ -18,5 +18,5 @@
   "tui": "fullscreen",
   "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
-  "theme": "auto"
+  "theme": "dark-ansi"
 }

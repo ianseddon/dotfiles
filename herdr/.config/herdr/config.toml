@@ -3,10 +3,10 @@ onboarding = false
 # tmux session -> herdr workspace, tmux window -> herdr tab, tmux pane -> herdr pane
 
 [theme]
-# herdr's built-in Kanagawa (Wave) palette, matching Ghostty, nvim, gh-dash, and
-# tuicr. The "terminal" theme it replaces drew bars and popup borders in Ghostty's
-# ANSI black (#090618, a navy that isn't in kanagawa.nvim's UI palette).
-name = "kanagawa"
+# The terminal's 16 colours, so herdr follows the theme (`theme set`) on every
+# machine. Bars and popup borders are drawn in ANSI black, which the theme sets to
+# its darker background (an earlier Ghostty theme made it navy).
+name = "terminal"
 auto_switch = false
 
 [terminal]

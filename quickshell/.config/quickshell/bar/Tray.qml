@@ -80,6 +80,11 @@ RowLayout {
         id: menu
 
         owner: root.menuItem ?? root
-        handle: root.menuItem?.modelData.menu ?? null
+        // The item may go away while remembered (an app quits, or a reload).
+        handle: root.menuItem?.modelData?.menu ?? null
+        onOpenChanged: {
+            if (!open)
+                root.menuItem = null;
+        }
     }
 }

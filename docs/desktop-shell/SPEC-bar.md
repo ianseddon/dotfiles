@@ -1,6 +1,6 @@
 # Spec: bar — V1
 
-Status: proposed. Module `bar` in the [capability map](README.md). Builds on [SPEC-shell-core.md](SPEC-shell-core.md).
+Status: approved 2026-11-24. Module `bar` in the [capability map](README.md). Builds on [SPEC-shell-core.md](SPEC-shell-core.md).
 
 ## Objective
 
@@ -10,9 +10,9 @@ A pill bar in Quickshell replaces Waybar. It should be **elegant and minimal at 
 
 - **Layout:** workspaces on the left (as dots), the clock alone in the centre (time only), and status on the right.
 - **Status area:** icons only. A value slides out on hover. A click opens a popup. A value shows by itself while it is abnormal: high CPU, memory or temperature, or muted audio.
-- **Indicators that show only when needed:** dictation and "something's wrong" are in this module. "Agents waiting on you" needs its own design work and moves to `bar-agents`.
-- **Tray:** a drawer behind a chevron. Themed Bluetooth and network panels replacing the applets come later, in `connectivity`.
-- **Moved out of this module** because each needs its own data work: agent usage limits (`bar-agents`), and GitHub reviews, weather and updates (`bar-info`). This module provides the slots they plug into.
+- **Indicators that show only when needed:** dictation and "something's wrong" are in this module. "Agents waiting on you" was dropped.
+- **Tray:** a drawer behind a chevron. Native Bluetooth and NetworkManager panels (mainly VPN) replacing the applets come later, in `connectivity`.
+- **Moved out of this module** because each needs its own data work: GitHub reviews, weather and updates (`bar-info`). This module provides the slots they plug into.
 - **No window title.**
 
 ## Layout
@@ -97,7 +97,7 @@ when something needs attention (examples)
   - **Tailscale down:** `tailscale status --json` reports a `BackendState` other than `Running`. Warning.
   - **Wired network down:** NetworkManager reports no connected Ethernet device. Critical.
   - **Failed units:** any failed system or user unit, each named. Warning.
-- **The slot is the extension point.** `bar-agents` and `bar-info` add indicators and items here in the same way.
+- **The slot is the extension point.** `bar-info` adds indicators and items here in the same way.
 
 **Status** (right, own pill): the tray drawer, system, volume and power.
 - **Tray drawer:**
@@ -220,7 +220,7 @@ The `waybar` pacman package stays installed until you remove it.
 
 ## Out of scope (deferred)
 
-- **`bar-agents`:** agents waiting on you (herdr states across machines, with a precise definition of "waiting"), and agent usage limits.
+- **Agent usage quota:** only from CLIProxyAPI's reported quota (see the map's Deferred list). `bar-agents` was dropped.
 - **`bar-info`:** GitHub review requests, weather and updates.
 - **`connectivity`:** themed Bluetooth and network panels replacing nm-applet and blueman.
 - **A per-app mixer in the volume popup.**

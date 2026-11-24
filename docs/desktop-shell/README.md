@@ -16,14 +16,13 @@ Each module gets its own spec in this directory (`SPEC-<module id>.md`), written
 | `notifications` | Notification server replacing swaync: popups, history, do not disturb. | `theme`, `shell-core` |
 | `osd` | Volume popup on change. | `theme`, `shell-core` |
 | `power-menu` | Lock, log out, suspend, reboot, shut down. Replaces `hyprshutdown`. | `theme`, `shell-core` |
-| `connectivity` | Themed Bluetooth and network panels replacing nm-applet and blueman. | `bar` |
-| `bar-agents` | Agents waiting on you (herdr, on every machine) and agent usage limits. | `bar` |
+| `connectivity` | Native, themed panels replacing nm-applet and blueman: NetworkManager (mainly turning VPNs on and off) and Bluetooth devices. | `bar` |
 | `bar-info` | GitHub review requests, weather, and updates. | `bar` |
 | `greeter` | Quickshell login screen on greetd, replacing tuigreet. | `theme`; reuses components from `bar` and `power-menu` |
 
-Build order: `theme` → `app-themes` → `shell-core` → `bar` → `launcher` → `notifications`, `osd`, `power-menu` → `connectivity`, `bar-agents`, `bar-info` (any order) → `greeter`.
+Build order: `theme` → `app-themes` → `shell-core` → `bar` → `launcher` → `notifications`, `osd`, `power-menu` → `connectivity`, `bar-info` (any order) → `greeter`.
 
-The three bar follow-ups were split out of `bar` on 2026-11-24, after surveying other shells: each needs its own data work.
+The bar follow-ups were split out of `bar` on 2026-11-24, after surveying other shells: each needs its own data work. `bar-agents` was dropped the same day: an "agents waiting" indicator wouldn't be useful in practice.
 
 ## Decisions
 
@@ -36,6 +35,7 @@ The three bar follow-ups were split out of `bar` on 2026-11-24, after surveying 
 
 ## Deferred
 
+- **Agent usage quota in the bar:** only if it can come from CLIProxyAPI's reported quota. Agent tools should not be signed in with OAuth on the desktop.
 - **Lock screen in Quickshell.** Hyprlock gets the theme's colours, but not the greeter's layout.
 - **Per-theme wallpapers.**
 - **Light-mode variants.**

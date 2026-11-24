@@ -501,6 +501,102 @@ class ShippedTargetsTest(unittest.TestCase):
         self.assertEqual(used - local - {"HOME"}, from_theme)
         self.assertIn("$accent = rgba(7aa2f7ff)", generated)
 
+    def test_herdr_app_theme_has_the_shape_herdr_app_accepts(self) -> None:
+        data = json.loads((self.out / "herdr-app.json").read_text())
+        self.assertEqual(set(data) - {"colors"}, {"background", "foreground", "selection", "cursor", "ansi"})
+        self.assertEqual(len(data["ansi"]), 16)
+        self.assertEqual(data["ansi"][0], "#0c0e14")  # darker_background, not background
+        self.assertEqual(data["ansi"][8], "#414868")  # muted
+        self.assertEqual(data["colors"]["accent"], "#7aa2f7")
+
+    def test_ghostty_conf_sets_all_16_palette_entries_like_herdr_app(self) -> None:
+        lines = (self.out / "ghostty.conf").read_text().splitlines()
+        palette = [line.split("=", 2)[2] for line in lines if line.startswith("palette = ")]
+        herdr = json.loads((self.out / "herdr-app.json").read_text())
+        self.assertEqual(palette, herdr["ansi"])
+        self.assertIn("background = #1a1b26", lines)
+
+    def fake_tools(self, **tools: str) -> dict[str, str]:
+        """An env whose PATH starts with fake commands that log their arguments to calls.log."""
+        bin_dir = self.out.parent / "bin"
+        bin_dir.mkdir(exist_ok=True)
+        for name, body in tools.items():
+            tool = bin_dir / name
+            tool.write_text(f'#!/bin/sh\necho "{name} $*" >> "{self.out.parent}/calls.log"\n{body}\n')
+            tool.chmod(0o755)
+        return {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "THEME_CURRENT": str(self.out)}
+
+    @property
+    def calls(self) -> list[str]:
+        log = self.out.parent / "calls.log"
+        return log.read_text().splitlines() if log.exists() else []
+
+    def test_desktop_hook_points_gtk_at_fontconfig_and_follows_the_mode(self) -> None:
+        env = self.fake_tools(gsettings="case $1 in get) echo \"'Adwaita Mono 11'\";; esac")
+        result = run_shipped_hook("20-desktop", env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        sets = [call for call in self.calls if call.startswith("gsettings set")]
+        self.assertEqual(
+            sets,
+            [
+                "gsettings set org.gnome.desktop.interface monospace-font-name Monospace 11",
+                "gsettings set org.gnome.desktop.interface font-name Sans 11",
+                "gsettings set org.gnome.desktop.interface color-scheme prefer-dark",
+            ],
+        )
+
+    def test_desktop_hook_leaves_matching_keys_alone(self) -> None:
+        get = (
+            "case $3 in monospace-font-name) echo \"'Monospace 11'\";; "
+            "font-name) echo \"'Sans 11'\";; *) echo \"'prefer-dark'\";; esac"
+        )
+        env = self.fake_tools(gsettings=get)
+        run_shipped_hook("20-desktop", env)
+        self.assertEqual([call for call in self.calls if call.startswith("gsettings set")], [])
+
+    def herdr_env(self, home: Path) -> dict[str, str]:
+        env = self.fake_tools(
+            **{
+                "fc-match": 'case "$*" in *monospace*) echo "Geist Mono";; *) echo Inter;; esac',
+                "herdr-app": "exit 0",
+            }
+        )
+        return {**env, "HERDR_APP_HOME": str(home)}
+
+    def test_herdr_app_hook_installs_the_theme_fonts_and_selects_it(self) -> None:
+        home = self.out.parent / "herdr-app"
+        home.mkdir()
+        (home / "settings.json").write_text('{"zoom": 1.2, "font": "JetBrains Mono"}\n')
+        result = run_shipped_hook("30-herdr-app", self.herdr_env(home))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            json.loads((home / "themes" / "current.json").read_text()),
+            json.loads((self.out / "herdr-app.json").read_text()),
+        )
+        settings = json.loads((home / "settings.json").read_text())
+        self.assertEqual(settings, {"zoom": 1.2, "font": "Geist Mono", "ui_font": "Inter"})
+        self.assertIn("herdr-app do app.theme --name current", self.calls)
+
+    def test_herdr_app_hook_skips_when_the_app_was_never_opened(self) -> None:
+        home = self.out.parent / "absent"
+        result = run_shipped_hook("30-herdr-app", self.herdr_env(home))
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertFalse(home.exists())
+
+    def test_herdr_app_hook_tolerates_the_app_not_running(self) -> None:
+        home = self.out.parent / "herdr-app"
+        home.mkdir()
+        env = self.herdr_env(home)
+        env = {**env, **self.fake_tools(**{"herdr-app": 'echo \'{"error": "not running"}\'; exit 1'})}
+        result = run_shipped_hook("30-herdr-app", env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((home / "themes" / "current.json").exists())
+
+    def test_ghostty_hook_signals_ghostty_to_reload(self) -> None:
+        env = self.fake_tools(pkill="exit 1")  # exit 1: no process matched
+        result = run_shipped_hook("40-ghostty", env)
+        self.assertEqual((result.returncode, self.calls), (0, ["pkill -USR2 -x ghostty"]))
+
     def test_hyprland_hook_skips_outside_hyprland(self) -> None:
         env = {k: v for k, v in os.environ.items() if k != "HYPRLAND_INSTANCE_SIGNATURE"}
         result = run_shipped_hook("10-hyprland", env)

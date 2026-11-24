@@ -22,7 +22,7 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 | `pi`, `claude` | pi and Claude Code settings | ✓ | ✓ |
 | `herdr`, `worktrunk`, `hunk`, `tuicr` | Workspaces, worktrees, and review | ✓ | ✓ |
 | `hyprland`, `waybar`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
-| `theme` | The `theme` command and its palettes (see [Theme](#theme)) | ✓ | |
+| `theme` | The `theme` command: colour themes and fonts (see [Theme](#theme)) | ✓ | |
 | `proton-pass` | SSH agent serving keys from Proton Pass | ✓ | |
 | `borgmatic` | Hourly backups of `~` to BorgBase (see [Backups](#backups)) | ✓ | |
 | `commitizen` | Commit message conventions | ✓ | ✓ |
@@ -111,26 +111,41 @@ Rootless limits: published ports must be 1024 or higher, `--network host` is Roo
 
 ## Theme
 
-One command sets the desktop's colour scheme. The design is in [docs/desktop-shell/SPEC-theme.md](docs/desktop-shell/SPEC-theme.md).
+One command sets the desktop's colour scheme, and another sets its fonts. The two are independent. The design is in [docs/desktop-shell/](docs/desktop-shell/).
 
 ```bash
-theme list                 # the current theme is marked
-theme set tokyo-night      # also: kanagawa, gruvbox-material, oxocarbon
-theme check                # validate every theme without switching
+theme list                          # the current theme is marked
+theme set tokyo-night               # also: kanagawa, gruvbox-material, oxocarbon
+theme font                          # the mono and sans families in use
+theme font mono "JetBrains Mono"    # any installed family (fc-list : family)
+theme check                         # validate every theme without switching
 ```
 
-- **Themes:** each theme is a folder in `theme/.config/theme/themes/<name>/`, holding a `colors.toml` in [Omarchy's palette format](https://github.com/basecamp/omarchy/blob/master/docs/theming.md). An Omarchy theme folder can be copied into `~/.config/theme/themes/` and used as is. Other files in a theme folder replace the generated file of the same name; this is how a theme uses an app's native port.
-- **Templates:** each target app has a template in `templates/`, such as `hyprland.lua.tpl`, with placeholders like `{{ accent }}`, `{{ accent_strip }}` (no `#`) and `{{ accent_rgb }}`.
+**Colours.** A theme is a folder in `theme/.config/theme/themes/<name>/`, holding a `colors.toml` in [Omarchy's palette format](https://github.com/basecamp/omarchy/blob/master/docs/theming.md).
+
+- **Omarchy themes:** an Omarchy theme folder can be copied into `~/.config/theme/themes/` and used as is.
+- **Theme files:** other files in a theme folder replace the generated file of the same name. This is how a theme uses an app's native port.
+- **Templates:** each target app has a template in `templates/`, with placeholders like `{{ accent }}`, `{{ accent_strip }}` (no `#`) and `{{ accent_rgb }}`.
 - **Generated files:** `theme set` writes them to `~/.local/state/theme/current/`, and the app configs include them from there. Switching therefore never changes a tracked file.
-- **Reload hooks:** after switching, the hooks in `hooks/` reload the apps that need it.
 
-Current targets:
+**Fonts.** `theme font` writes `~/.local/state/theme/fonts.conf`, which `fontconfig/fonts.conf` includes ahead of its defaults (Mononoki Nerd Font, Inter). Delete that file to return to the defaults.
 
-- the Hyprland borders (`hypr/theme.lua`);
-- hyprlock (`source =` in `hyprlock.conf`);
-- the login screen.
+- **One source:** fontconfig's `monospace` and `sans-serif` aliases decide the fonts. Apps should ask for those generic names, not a named font.
+- **Icons:** `Symbols Nerd Font` supplies icons to fonts that have none.
 
-The login screen runs as the `greeter` user, which can't read `~`, so the `90-greeter` hook copies the palette to `/var/lib/greeter-theme`. Create that directory once:
+**Reload hooks.** After either command, the hooks in `hooks/` bring each app in line:
+
+| Hook | What it updates |
+|---|---|
+| Hyprland | Its borders, via `hyprctl reload`. |
+| GTK and libadwaita | gsettings points at the generic font names, and its light or dark mode follows the theme. |
+| herdr-app | Its theme (`themes/current.json`) and its fonts (`settings.json`). It does not read fontconfig's aliases, so the hook gives it the resolved family names. |
+| Ghostty | It reloads on `SIGUSR2`. |
+| The login screen | It gets a copy of the palette. |
+
+hyprlock reads its colours each time it starts. bat, delta and the Tide prompt use the terminal's 16 colours, so they follow the theme through the terminal's palette.
+
+The login screen runs as the `greeter` user, which can't read `~`, so the greeter hook copies the palette to `/var/lib/greeter-theme`. Create that directory once:
 
 ```bash
 sudo install -d -o "$USER" -g greeter -m 0750 /var/lib/greeter-theme

@@ -1,0 +1,30 @@
+#!/bin/sh
+# herdr-app: install the theme's palette as themes/current.json and select it, and
+# give it the fonts fontconfig resolves (it does not read fontconfig's aliases).
+# settings.json is the app's own state, which it reloads live; other keys are kept.
+set -eu
+home=${HERDR_APP_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/herdr-app}
+[ -d "$home" ] || exit 0 # never opened
+
+replace() { # replace <file> <new content file>: atomic, and only when it changed
+	if cmp -s "$2" "$1"; then rm "$2"; else mv "$2" "$1"; fi
+}
+
+theme=${THEME_CURRENT:-}/herdr-app.json
+if [ -f "$theme" ]; then
+	mkdir -p "$home/themes"
+	cp "$theme" "$home/themes/.current.json.tmp"
+	replace "$home/themes/current.json" "$home/themes/.current.json.tmp"
+fi
+
+settings=$home/settings.json
+[ -f "$settings" ] || echo '{}' >"$settings"
+jq --arg mono "$(fc-match -f '%{family[0]}' monospace)" --arg sans "$(fc-match -f '%{family[0]}' sans-serif)" \
+	'.font = $mono | .ui_font = $sans' "$settings" >"$settings.tmp"
+replace "$settings" "$settings.tmp"
+
+# Selecting the theme also reloads it. When the app isn't running, it picks the
+# theme up from its own state on the next start.
+if [ -f "$theme" ]; then
+	herdr-app "do" app.theme --name current >/dev/null 2>&1 || true
+fi

@@ -1,0 +1,21 @@
+#!/bin/sh
+# GTK and libadwaita apps take their fonts and light or dark mode from gsettings,
+# not fontconfig's aliases. Point the fonts at the generic families, so fontconfig
+# (and `theme font`) decides, and follow the theme's mode. Keys already right are
+# left alone: every write notifies each running app.
+set -eu
+command -v gsettings >/dev/null || exit 0
+
+ensure() {
+	if [ "$(gsettings get org.gnome.desktop.interface "$1")" != "'$2'" ]; then
+		gsettings set org.gnome.desktop.interface "$1" "$2"
+	fi
+}
+
+ensure monospace-font-name "Monospace 11"
+ensure font-name "Sans 11"
+
+palette=${THEME_CURRENT:-}/palette.json
+if [ -f "$palette" ]; then
+	ensure color-scheme "prefer-$(jq -r .mode "$palette")"
+fi

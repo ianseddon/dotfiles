@@ -132,6 +132,18 @@ theme check                         # validate every theme without switching
 
 - **One source:** fontconfig's `monospace` and `sans-serif` aliases decide the fonts. Apps should ask for those generic names, not a named font.
 - **Icons:** `Symbols Nerd Font` supplies icons to fonts that have none.
+- **Packages:** the fonts come from pacman (desktop only):
+
+  ```bash
+  # Defaults, icons, and coverage: Latin, emoji, Japanese, Chinese, Korean, and
+  # Arial/Times/Courier-compatible metrics for web pages.
+  sudo pacman -S --needed inter-font ttf-mononoki-nerd ttf-nerd-fonts-symbols \
+      noto-fonts noto-fonts-emoji noto-fonts-cjk ttf-liberation
+  # Monospace alternatives for `theme font mono`.
+  sudo pacman -S --needed ttf-jetbrains-mono-nerd ttf-firacode-nerd ttf-ibmplex-mono-nerd
+  ```
+
+  Arch's default presets already turn on antialiasing, slight hinting and the LCD filter. Subpixel rendering stays off: DP-3 is rotated, so its subpixels run vertically, and translucent windows would give the text colour fringes.
 
 **Reload hooks.** After either command, the hooks in `hooks/` bring each app in line:
 

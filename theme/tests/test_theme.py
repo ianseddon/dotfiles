@@ -658,6 +658,35 @@ class ShippedTargetsTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("nvim.100.0 did not reload", result.stderr)
 
+    def qs_env(self, call_exit: int) -> dict[str, str]:
+        listing = '[{"id": "aaa", "pid": 1}, {"id": "bbb", "pid": 2}]'
+        body = f"case $1 in list) echo '{listing}';; ipc) exit {call_exit};; esac"
+        return self.fake_tools(qs=body)
+
+    def test_quickshell_hook_reloads_every_running_instance(self) -> None:
+        result = run_shipped_hook("60-quickshell", self.qs_env(0))
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertEqual(
+            self.calls,
+            [
+                "qs list --all --json",
+                "qs ipc --id aaa call theme reload",
+                "qs ipc --id bbb call theme reload",
+            ],
+        )
+
+    def test_quickshell_hook_is_quiet_when_no_instance_runs(self) -> None:
+        # qs prints this text, not JSON, even with --json.
+        env = self.fake_tools(qs="echo 'No running instances.'")
+        result = run_shipped_hook("60-quickshell", env)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertEqual(self.calls, ["qs list --all --json"])
+
+    def test_quickshell_hook_reports_an_instance_that_does_not_reload(self) -> None:
+        result = run_shipped_hook("60-quickshell", self.qs_env(1))
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("instance aaa did not reload", result.stderr)
+
     def test_hyprland_hook_skips_outside_hyprland(self) -> None:
         env = {k: v for k, v in os.environ.items() if k != "HYPRLAND_INSTANCE_SIGNATURE"}
         result = run_shipped_hook("10-hyprland", env)

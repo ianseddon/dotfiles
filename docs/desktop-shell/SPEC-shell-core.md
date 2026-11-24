@@ -1,6 +1,6 @@
 # Spec: shell-core — V1
 
-Status: proposed. Module `shell-core` in the [capability map](README.md).
+Status: implemented 2026-11-24. Module `shell-core` in the [capability map](README.md).
 
 ## Objective
 
@@ -162,7 +162,7 @@ Singleton {
 - **Lint:** `qmllint` against the installed Quickshell type information. Findings that come from Quickshell's own types are listed in the README with the reason. There are no inline suppressions.
 - **The theme hook:** tested like the other hooks, in `theme/tests`, with a fake `qs`.
 - **End-to-end, in the session:**
-  - **Service:** it starts with the session, restarts cleanly, and logs no warnings.
+  - **Service:** it starts with the session, restarts cleanly, and logs no warnings, except Qt's text-input warning (see Findings).
   - **Preview:** for each of the four themes, the preview's swatches match `palette.json` exactly (checked by pixel), and `theme set` updates it live.
   - **Fonts:** `theme font mono "FiraCode Nerd Font"` changes the preview's mono sample live, with no restart.
   - **Scaling:** the preview renders crisply on DP-4 (1.25×) and DP-3 (rotated).
@@ -183,6 +183,14 @@ Singleton {
   - start a second always-on instance;
   - hard-code a palette;
   - write to the theme state from the shell.
+
+## Findings during implementation
+
+- **Qt's text-input warning:** closing a surface that had keyboard focus logs `qt.qpa.wayland.textinput: … Trying to disable … but 0x0 is focused`. Hiding the window instead of destroying it logs it too, so the cause is focus leaving the surface. It is a known Qt Wayland bug that other Qt apps and Quickshell shells also log, and it is documented in the README rather than filtered out.
+- **`qs list --all --json` with no instances** prints "No running instances." as plain text, so the theme hook checks for a JSON array before parsing.
+- **`qmllint` needs absolute paths:** with relative ones it misreads `theme/qmldir`. Its only remaining finding is Quickshell's `PanelWindow` "is not creatable", which comes from Quickshell's type information.
+- **Plain stow, not `--no-folding`:** Quickshell writes nothing next to its config, so `~/.config/quickshell` links to the package as a whole.
+- **Hyprland's Lua mode:** `hyprctl dispatch focusmonitor DP-3` fails there, because dispatchers are Lua expressions. Note this for scripts in later modules.
 
 ## Success criteria
 

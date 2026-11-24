@@ -23,6 +23,7 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 | `herdr`, `worktrunk`, `hunk`, `tuicr` | Workspaces, worktrees, and review | ✓ | ✓ |
 | `hyprland`, `waybar`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
 | `theme` | The `theme` command: colour themes and fonts (see [Theme](#theme)) | ✓ | |
+| `quickshell` | The desktop shell (see [Shell](#shell)) | ✓ | |
 | `proton-pass` | SSH agent serving keys from Proton Pass | ✓ | |
 | `borgmatic` | Hourly backups of `~` to BorgBase (see [Backups](#backups)) | ✓ | |
 | `commitizen` | Commit message conventions | ✓ | ✓ |
@@ -171,6 +172,37 @@ python3 -m unittest discover -s theme/tests
 (cd theme && ruff check . && ruff format --check . && basedpyright)
 shellcheck theme/.config/theme/hooks/*
 ```
+
+## Shell
+
+The desktop shell is [Quickshell](https://quickshell.org/) (`sudo pacman -S quickshell`). The design is in [docs/desktop-shell/](docs/desktop-shell/). So far it has the shared theme and style values, and a theme preview; Waybar is still the bar.
+
+```bash
+stow --target="$HOME" quickshell             # folded: ~/.config/quickshell links to the package
+systemctl --user enable --now quickshell     # starts with the Hyprland session
+qs ipc call theme preview                    # show or hide the palette and fonts
+journalctl --user -u quickshell -f           # the log
+qs -p ~/dotfiles/quickshell/.config/quickshell   # a second instance for development
+```
+
+Editing a QML file reloads the running shell. The `60-quickshell` theme hook tells every running instance to re-read the palette and fonts.
+
+- **Colours and fonts:** `theme/Theme.qml` exposes the palette and the font families fontconfig resolves. It uses the resolved names rather than `monospace`, because Qt reads fontconfig's configuration only at startup, and exact names switch live.
+- **Sizes:** spacing, radius, font sizes and motion are in `theme/Style.qml`.
+
+Checks, from the repo root:
+
+```bash
+QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input quickshell/tests
+/usr/lib/qt6/bin/qmllint -I /usr/lib/qt6/qml $(find "$PWD/quickshell/.config/quickshell" -name '*.qml')
+/usr/lib/qt6/bin/qmlformat -i <file.qml>
+```
+
+Known noise:
+
+- **`qmllint`'s path handling:** pass absolute paths. With relative paths it misreads `theme/qmldir` and reports the singletons as undeclared.
+- **`PanelWindow` "is not creatable" (`qmllint`):** Quickshell's type information marks its window types uncreatable, because it creates them through a proxy. They work.
+- **`qt.qpa.wayland.textinput` "Trying to disable … but 0x0 is focused" (the log):** Qt logs this whenever a shell surface that had keyboard focus closes. It is a known, harmless Qt Wayland bug that also appears in other Qt apps and Quickshell shells.
 
 ## Backups
 

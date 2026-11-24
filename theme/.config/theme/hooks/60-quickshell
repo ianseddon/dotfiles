@@ -1,0 +1,18 @@
+#!/bin/sh
+# Running Quickshell instances (the session's, and any started with `qs -p` while
+# developing) re-read the palette and re-resolve the fonts. One that doesn't answer
+# within 2 seconds is reported, not fatal.
+set -eu
+command -v qs >/dev/null || exit 0
+
+instances=$(qs list --all --json 2>/dev/null) || exit 0
+case $instances in
+\[*) ;;
+*) exit 0 ;; # "No running instances." is plain text, even with --json
+esac
+
+for id in $(printf '%s' "$instances" | jq -r '.[].id'); do
+	if ! timeout 2 qs ipc --id "$id" call theme reload >/dev/null 2>&1; then
+		echo "theme: the Quickshell instance $id did not reload" >&2
+	fi
+done

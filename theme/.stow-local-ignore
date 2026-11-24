@@ -1,3 +1,5 @@
-# Tests and lint settings stay in the checkout, not $HOME.
+# Tests, lint settings, and tool caches stay in the checkout, not $HOME.
 ^/tests
 ^/pyproject\.toml
+^/\.ruff_cache
+__pycache__

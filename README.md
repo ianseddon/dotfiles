@@ -22,6 +22,7 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 | `pi`, `claude` | pi and Claude Code settings | ✓ | ✓ |
 | `herdr`, `worktrunk`, `hunk`, `tuicr` | Workspaces, worktrees, and review | ✓ | ✓ |
 | `hyprland`, `waybar`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
+| `theme` | The `theme` command and its palettes (see [Theme](#theme)) | ✓ | |
 | `proton-pass` | SSH agent serving keys from Proton Pass | ✓ | |
 | `borgmatic` | Hourly backups of `~` to BorgBase (see [Backups](#backups)) | ✓ | |
 | `commitizen` | Commit message conventions | ✓ | ✓ |
@@ -107,6 +108,42 @@ docker info --format '{{json .SecurityOptions}}'   # includes "name=rootless"
 ```
 
 Rootless limits: published ports must be 1024 or higher, `--network host` is RootlessKit's namespace, and files that non-root container users write to bind mounts belong to subordinate UIDs (reclaim with `docker run --rm -v "$PWD:/w" alpine chown -R 0:0 /w`). Images and volumes live under `~/.local/share/docker`.
+
+## Theme
+
+One command sets the desktop's colour scheme. The design is in [docs/desktop-shell/SPEC-theme.md](docs/desktop-shell/SPEC-theme.md).
+
+```bash
+theme list                 # the current theme is marked
+theme set tokyo-night      # also: kanagawa, gruvbox-material, oxocarbon
+theme check                # validate every theme without switching
+```
+
+- **Themes:** each theme is a folder in `theme/.config/theme/themes/<name>/`, holding a `colors.toml` in [Omarchy's palette format](https://github.com/basecamp/omarchy/blob/master/docs/theming.md). An Omarchy theme folder can be copied into `~/.config/theme/themes/` and used as is. Other files in a theme folder replace the generated file of the same name; this is how a theme uses an app's native port.
+- **Templates:** each target app has a template in `templates/`, such as `hyprland.lua.tpl`, with placeholders like `{{ accent }}`, `{{ accent_strip }}` (no `#`) and `{{ accent_rgb }}`.
+- **Generated files:** `theme set` writes them to `~/.local/state/theme/current/`, and the app configs include them from there. Switching therefore never changes a tracked file.
+- **Reload hooks:** after switching, the hooks in `hooks/` reload the apps that need it.
+
+Current targets:
+
+- the Hyprland borders (`hypr/theme.lua`);
+- hyprlock (`source =` in `hyprlock.conf`);
+- the login screen.
+
+The login screen runs as the `greeter` user, which can't read `~`, so the `90-greeter` hook copies the palette to `/var/lib/greeter-theme`. Create that directory once:
+
+```bash
+sudo install -d -o "$USER" -g greeter -m 0750 /var/lib/greeter-theme
+theme set "$(theme current)"
+```
+
+Tests and lint, from the repo root:
+
+```bash
+python3 -m unittest discover -s theme/tests
+(cd theme && ruff check . && ruff format --check . && basedpyright)
+shellcheck theme/.config/theme/hooks/*
+```
 
 ## Backups
 

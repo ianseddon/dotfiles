@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""Switch the desktop colour scheme.
+
+A theme is a folder holding a `colors.toml` palette (Omarchy's schema). `theme set`
+renders every template in the templates folder with that palette, switches
+~/.local/state/theme/current to the result in one step, then runs the reload hooks.
+Design: docs/desktop-shell/SPEC-theme.md in the dotfiles repo.
+"""
+
+import argparse
+import json
+import os
+import re
+import shutil
+import sys
+import tempfile
+import tomllib
+from dataclasses import dataclass
+from pathlib import Path
+
+REQUIRED_COLOURS = (
+    "accent",
+    "selection",
+    "muted",
+    "background",
+    "dark_background",
+    "darker_background",
+    "lighter_background",
+    "foreground",
+    "dark_foreground",
+    "light_foreground",
+    "bright_foreground",
+    "red",
+    "yellow",
+    "orange",
+    "green",
+    "cyan",
+    "blue",
+    "magenta",
+    "brown",
+    "bright_red",
+    "bright_yellow",
+    "bright_green",
+    "bright_cyan",
+    "bright_blue",
+    "bright_magenta",
+)
+MODES = ("dark", "light")
+# Files every render writes itself, so a theme folder may not ship them.
+GENERATED = ("name", "palette.json")
+PALETTE_FILE = "colors.toml"
+TEMPLATE_SUFFIX = ".tpl"
+
+THEME_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+HEX_COLOUR = re.compile(r"#[0-9a-fA-F]{6}")
+PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
+
+
+class ThemeError(Exception):
+    """A problem with a theme or template that stops a render."""
+
+
+class RenderError(ThemeError):
+    """A template refers to something the palette does not have."""
+
+
+@dataclass(frozen=True)
+class Palette:
+    name: str
+    values: dict[str, str]
+    folder: Path
+
+    def resolve(self, token: str) -> str | None:
+        """The value for a placeholder: a key, or a colour key with _strip or _rgb."""
+        if token in self.values:
+            return self.values[token]
+        key, _, form = token.rpartition("_")
+        colour = self.values.get(key)
+        if colour is None or not HEX_COLOUR.fullmatch(colour):
+            return None
+        if form == "strip":
+            return colour[1:]
+        if form == "rgb":
+            return ",".join(str(int(colour[i : i + 2], 16)) for i in (1, 3, 5))
+        return None
+
+
+def load_palette(folder: Path) -> Palette:
+    name = folder.name
+    if not THEME_NAME.fullmatch(name):
+        raise ThemeError(f"theme name '{name}' must be lowercase kebab-case")
+    path = folder / PALETTE_FILE
+    try:
+        raw = tomllib.loads(path.read_text())
+    except FileNotFoundError:
+        raise ThemeError(f"{path}: not found") from None
+    except tomllib.TOMLDecodeError as error:
+        raise ThemeError(f"{path}: invalid TOML: {error}") from None
+
+    values: dict[str, str] = {}
+    for key, value in raw.items():
+        if key in GENERATED:
+            raise ThemeError(f"{path}: '{key}' is reserved")
+        if not isinstance(value, str):
+            raise ThemeError(f"{path}: '{key}' must be a string")
+        values[key] = value
+
+    for key in ("mode", *REQUIRED_COLOURS):
+        if key not in values:
+            raise ThemeError(f"{path}: missing key '{key}'")
+    if values["mode"] not in MODES:
+        raise ThemeError(f"{path}: 'mode' must be 'dark' or 'light', got '{values['mode']}'")
+    for key in REQUIRED_COLOURS:
+        if not HEX_COLOUR.fullmatch(values[key]):
+            raise ThemeError(f"{path}: '{key}' must be #rrggbb, got '{values[key]}'")
+    return Palette(name, values, folder)
+
+
+def render(template: str, palette: Palette, *, source: Path) -> str:
+    """Replace every {{ key }} placeholder, or fail naming the first unknown key."""
+
+    def substitute(match: re.Match[str]) -> str:
+        token = match.group(1)
+        value = palette.resolve(token)
+        if value is None:
+            line = template.count("\n", 0, match.start()) + 1
+            raise RenderError(f"{source}:{line}: unknown palette key '{token}'")
+        return value
+
+    return PLACEHOLDER.sub(substitute, template)
+
+
+def render_theme(palette: Palette, templates: Path, out: Path) -> None:
+    """Write a theme's files into `out`: its own files first, then templates for the rest."""
+    for file in sorted(palette.folder.iterdir()):
+        if not file.is_file() or file.name == PALETTE_FILE:
+            continue
+        if file.name in GENERATED:
+            raise ThemeError(f"{file}: {file.name} is generated and cannot be part of a theme")
+        shutil.copyfile(file, out / file.name)
+
+    if templates.is_dir():
+        for template in sorted(templates.glob(f"*{TEMPLATE_SUFFIX}")):
+            target = out / template.name.removesuffix(TEMPLATE_SUFFIX)
+            if not target.exists():
+                target.write_text(render(template.read_text(), palette, source=template))
+
+    (out / "name").write_text(f"{palette.name}\n")
+    (out / "palette.json").write_text(json.dumps({"name": palette.name, **palette.values}, indent=2) + "\n")
+
+
+@dataclass(frozen=True)
+class Paths:
+    config: Path
+    state: Path
+
+    @classmethod
+    def from_env(cls) -> Paths:
+        home = Path.home()
+        config_home = Path(os.environ.get("XDG_CONFIG_HOME") or home / ".config")
+        state_home = Path(os.environ.get("XDG_STATE_HOME") or home / ".local" / "state")
+        config = Path(os.environ.get("THEME_CONFIG_DIR") or config_home / "theme")
+        return cls(config=config, state=state_home / "theme")
+
+    @property
+    def themes(self) -> Path:
+        return self.config / "themes"
+
+    @property
+    def templates(self) -> Path:
+        return self.config / "templates"
+
+
+def theme_names(paths: Paths) -> list[str]:
+    if not paths.themes.is_dir():
+        return []
+    return sorted(d.name for d in paths.themes.iterdir() if (d / PALETTE_FILE).is_file())
+
+
+def find_theme(paths: Paths, name: str) -> Path:
+    folder = paths.themes / name
+    if not (folder / PALETTE_FILE).is_file():
+        raise ThemeError(f"no theme named '{name}' in {paths.themes}")
+    return folder
+
+
+def cmd_check(paths: Paths, names: list[str]) -> int:
+    failed = False
+    for name in names or theme_names(paths):
+        try:
+            palette = load_palette(find_theme(paths, name))
+            with tempfile.TemporaryDirectory() as scratch:
+                render_theme(palette, paths.templates, Path(scratch))
+        except ThemeError as error:
+            print(f"theme: {error}", file=sys.stderr)
+            failed = True
+        else:
+            print(f"ok {name}")
+    return 1 if failed else 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="theme", description=__doc__.splitlines()[0])
+    commands = parser.add_subparsers(dest="command", required=True)
+    check = commands.add_parser("check", help="validate and render without switching")
+    check.add_argument("names", nargs="*", metavar="name")
+    args = parser.parse_args(argv)
+
+    paths = Paths.from_env()
+    if args.command == "check":
+        return cmd_check(paths, args.names)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,3 @@
+# Tests and lint settings stay in the checkout, not $HOME.
+^/tests
+^/pyproject\.toml

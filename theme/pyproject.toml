@@ -1,0 +1,19 @@
+# Lint settings for the `theme` command. Not a package: there is nothing to install.
+[tool.ruff]
+line-length = 110
+target-version = "py314"
+extend-include = [".local/bin/theme"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "RUF", "PTH", "RET", "C4"]
+
+[tool.basedpyright]
+include = [".local/bin/theme", "tests"]
+pythonVersion = "3.14"
+typeCheckingMode = "all"
+# The tests load the extension-less script at run time, so its names are Any
+# to the checker, and unittest's assert* results are ignored by design.
+reportUnusedCallResult = false
+reportAny = false
+# unittest initialises test state in setUp, not __init__.
+reportUninitializedInstanceVariable = false

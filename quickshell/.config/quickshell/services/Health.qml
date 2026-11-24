@@ -7,8 +7,8 @@ import Quickshell.Io
 import Quickshell.Networking
 import "logic.js" as Logic
 
-// Problems worth showing in the bar, checked every minute: backups, Tailscale,
-// failed units, and the wired network (live, from NetworkManager).
+// Problems worth showing in the bar: failed units (every 10 seconds), backups
+// and Tailscale (every minute), and the wired network (live, from NetworkManager).
 // Each problem is {severity: "warning" | "critical", title, detail}.
 Singleton {
     id: root
@@ -28,11 +28,17 @@ Singleton {
     readonly property var problems: backup.concat(tailscale, wired, systemUnits, userUnits)
     readonly property string severity: Logic.worst(problems)
 
-    function check(): void {
-        backupCheck.running = true;
-        tailscaleCheck.running = true;
-        systemUnitsCheck.running = true;
-        userUnitsCheck.running = true;
+    // Failed units are cheap to list and worth knowing about quickly; backups
+    // and Tailscale change slowly.
+    Timer {
+        interval: 10000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            systemUnitsCheck.running = true;
+            userUnitsCheck.running = true;
+        }
     }
 
     Timer {
@@ -40,7 +46,10 @@ Singleton {
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: root.check()
+        onTriggered: {
+            backupCheck.running = true;
+            tailscaleCheck.running = true;
+        }
     }
 
     Process {

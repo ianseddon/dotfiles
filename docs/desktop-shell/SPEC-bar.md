@@ -91,7 +91,7 @@ when something needs attention (examples)
   - **While recording:** a mic icon in `Theme.red`, with a soft pulse.
   - **While transcribing:** the icon in `Theme.yellow`, with a slow spin.
   - **Otherwise:** hidden.
-- **Something's wrong:** a `Theme.yellow` warning icon (`Theme.red` if anything is critical). Click lists each problem with a short "why" and an action. Problems, checked every 60 s:
+- **Something's wrong:** a `Theme.yellow` warning icon (`Theme.red` if anything is critical). Click lists each problem with a short "why" and an action. Failed units are checked every 10 s, so they show quickly; the others every 60 s. Problems:
   - **Backup failed:** the last `borgmatic.service` result isn't `success`. Critical.
   - **Backup overdue:** the last success is more than 3 hours old (the timer runs hourly). Warning.
   - **Tailscale down:** `tailscale status --json` reports a `BackendState` other than `Running`. Warning.

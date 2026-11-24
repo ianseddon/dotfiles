@@ -6,6 +6,9 @@
 -- https://wiki.hypr.land/Configuring/Basics/Dispatchers/
 
 local terminal = "ghostty"
+-- Launcher trial: Vicinae on SUPER+SPACE, Rofi kept on SUPER+ALT+SPACE until the
+-- trial ends (docs/desktop-shell/README.md, launcher).
+local launcher = "vicinae toggle"
 local menu     = "$HOME/.config/rofi/bin/launcher"
 
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
@@ -19,7 +22,8 @@ end
 bind(mainMod .. " + RETURN", "Terminal",     hl.dsp.exec_cmd(terminal))
 bind(mainMod .. " + Q",      "Close window", hl.dsp.window.close())
 bind(mainMod .. " + M",      "Exit session", hl.dsp.exit())
-bind(mainMod .. " + SPACE",  "App launcher", hl.dsp.exec_cmd(menu))
+bind(mainMod .. " + SPACE",  "Launcher",     hl.dsp.exec_cmd(launcher))
+bind(mainMod .. " + ALT + SPACE", "App launcher (Rofi)", hl.dsp.exec_cmd(menu))
 
 -- Copy / Paste (universal — works in terminals too)
 bind(mainMod .. " + C", "Copy",  hl.dsp.send_shortcut({ mods = "CTRL",  key = "Insert" }))

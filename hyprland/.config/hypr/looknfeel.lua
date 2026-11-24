@@ -105,6 +105,16 @@ hl.layer_rule({
     ignore_alpha = 0.5,
 })
 
+-- Vicinae (the launcher on trial): blur behind its translucent window, and no
+-- open/close animation (Vicinae animates itself).
+hl.layer_rule({
+    name         = "vicinae",
+    match        = { namespace = "^vicinae$" },
+    blur         = true,
+    ignore_alpha = 0,
+    no_anim      = true,
+})
+
 ------------------
 ---- TERMINAL ----
 ------------------

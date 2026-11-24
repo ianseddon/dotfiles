@@ -12,7 +12,7 @@ Each module gets its own spec in this directory (`SPEC-<module id>.md`), written
 | `app-themes` | Templates or native ports for herdr-app, Ghostty, nvim, fish, herdr, gh-dash, tuicr and bat. The terminal palette (herdr-app, Ghostty) shipped first, with fonts: [SPEC-fonts-and-terminals.md](SPEC-fonts-and-terminals.md). | `theme` |
 | `shell-core` | The `quickshell` Stow package, `shell.qml`, one window per monitor, IPC, the systemd user service that replaces `launch-waybar.sh`, and shell style settings (radius, spacing, bar shape). Fonts come from fontconfig's `monospace` and `sans-serif` aliases, which `theme font` sets. | `theme` |
 | `bar` | Pill bar, minimal at rest and informative when needed: workspaces, clock, media, status icons with detail on demand, a tray drawer, and indicators that appear only when needed (dictation, something's wrong). DP-3 (portrait) keeps workspaces and the clock. | `theme`, `shell-core` |
-| `launcher` | App search on `SUPER+SPACE`, replacing Rofi. | `theme`, `shell-core` |
+| `launcher` | On trial (2026-11-24): [Vicinae](https://vicinae.com), a Raycast-style launcher, themed from the palette by the `35-vicinae` hook, on `SUPER+SPACE`; Rofi stays on `SUPER+ALT+SPACE` meanwhile. If Vicinae doesn't fit, a custom Quickshell launcher replaces both. | `theme`, `shell-core` |
 | `notifications` | Notification server replacing swaync: popups, history, do not disturb. | `theme`, `shell-core` |
 | `osd` | Volume popup on change. | `theme`, `shell-core` |
 | `power-menu` | Lock, log out, suspend, reboot, shut down. Replaces `hyprshutdown`. | `theme`, `shell-core` |

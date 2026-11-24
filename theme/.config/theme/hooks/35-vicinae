@@ -1,0 +1,12 @@
+#!/bin/sh
+# Vicinae (the launcher on trial): install the palette as its "dotfiles" theme,
+# which ~/.config/vicinae/dotfiles.jsonc selects. Skipped where Vicinae isn't installed.
+set -eu
+command -v vicinae >/dev/null || exit 0
+
+theme=${THEME_CURRENT:-}/vicinae.toml
+[ -f "$theme" ] || exit 0
+dir=${XDG_DATA_HOME:-$HOME/.local/share}/vicinae/themes
+mkdir -p "$dir"
+cp "$theme" "$dir/.dotfiles.toml.tmp"
+mv "$dir/.dotfiles.toml.tmp" "$dir/dotfiles.toml"

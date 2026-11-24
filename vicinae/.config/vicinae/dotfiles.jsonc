@@ -1,0 +1,14 @@
+// Tracked Vicinae settings (the launcher trial; see docs/desktop-shell/README.md).
+// settings.json imports this file. Vicinae rewrites settings.json itself, but never
+// touches imported files, so this one can live in the dotfiles.
+{
+	// The palette of the current theme, installed by the theme hook 35-vicinae.
+	"theme": {
+		"light": { "name": "dotfiles" },
+		"dark": { "name": "dotfiles" }
+	},
+	// fontconfig's default UI family (theme font sans), like the rest of the desktop.
+	"font": {
+		"normal": { "family": "system" }
+	}
+}

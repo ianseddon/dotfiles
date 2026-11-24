@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import tomllib
 import unittest
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
@@ -686,6 +687,39 @@ class ShippedTargetsTest(unittest.TestCase):
         result = run_shipped_hook("60-quickshell", self.qs_env(1))
         self.assertEqual(result.returncode, 0)
         self.assertIn("instance aaa did not reload", result.stderr)
+
+    def test_vicinae_theme_is_valid_toml_from_the_palette(self) -> None:
+        data = tomllib.loads((self.out / "vicinae.toml").read_text())
+        self.assertEqual(data["meta"]["variant"], "dark")
+        self.assertEqual(data["meta"]["inherits"], "vicinae-dark")
+        self.assertEqual(data["colors"]["core"]["accent"], "#7aa2f7")
+        self.assertEqual(data["colors"]["core"]["background"], "#1a1b26")
+
+    def test_vicinae_hook_installs_the_theme(self) -> None:
+        data_home = self.out.parent / "data"
+        env = {**self.fake_tools(vicinae="exit 0"), "XDG_DATA_HOME": str(data_home)}
+        result = run_shipped_hook("35-vicinae", env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        installed = data_home / "vicinae" / "themes" / "dotfiles.toml"
+        self.assertEqual(installed.read_text(), (self.out / "vicinae.toml").read_text())
+
+    def test_vicinae_hook_skips_without_vicinae(self) -> None:
+        data_home = self.out.parent / "data"
+        env = {
+            **os.environ,
+            "THEME_CURRENT": str(self.out),
+            "XDG_DATA_HOME": str(data_home),
+            "PATH": "/usr/bin/nonexistent",
+        }
+        result = subprocess.run(
+            ["/bin/sh", SHIPPED_CONFIG / "hooks" / "35-vicinae", "tokyo-night"],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertFalse(data_home.exists())
 
     def test_hyprland_hook_skips_outside_hyprland(self) -> None:
         env = {k: v for k, v in os.environ.items() if k != "HYPRLAND_INSTANCE_SIGNATURE"}

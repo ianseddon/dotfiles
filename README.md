@@ -24,11 +24,12 @@ Each top-level directory is a Stow package, mirroring `$HOME`.
 | `hyprland`, `rofi`, `ghostty`, `voxtype`, `fontconfig` | The desktop session | ✓ | |
 | `theme` | The `theme` command: colour themes and fonts (see [Theme](#theme)) | ✓ | |
 | `quickshell` | The desktop shell (see [Shell](#shell)) | ✓ | |
+| `vicinae` | The launcher on trial (see [Launcher](#launcher)) | ✓ | |
 | `proton-pass` | SSH agent serving keys from Proton Pass | ✓ | |
 | `borgmatic` | Hourly backups of `~` to BorgBase (see [Backups](#backups)) | ✓ | |
 | `commitizen` | Commit message conventions | ✓ | ✓ |
 
-`ly` and `pam` are system files, installed into `/etc` by hand rather than stowed; `i3` is the retired X11 session, kept for reference. `skills` isn't a Stow package either: it holds my own agent skills (see [Agents](#agents)), and `docs` holds design notes.
+`ly`, `pam` and `pacman` are system files, installed into `/etc` by hand rather than stowed; `i3` is the retired X11 session, kept for reference. `skills` isn't a Stow package either: it holds my own agent skills (see [Agents](#agents)), and `docs` holds design notes.
 
 Packages whose app writes its own state next to the config are stowed with `--no-folding`, so only the tracked files are links and the directory stays real. `agents` and `gh` are stowed without it: their directories are links on purpose.
 
@@ -206,6 +207,22 @@ Known noise:
   - `values` "not found on type UntypedObjectModel": Quickshell's object models have a `values` list that its type information doesn't describe.
   - A popup's `anchor.item`, `anchor.edges` and the like "not found": the same proxy problem, for `PopupWindow`.
 - **`qt.qpa.wayland.textinput` "Trying to disable … but 0x0 is focused" (the log):** Qt logs this whenever a shell surface that had keyboard focus closes. It is a known, harmless Qt Wayland bug that also appears in other Qt apps and Quickshell shells.
+
+## Launcher
+
+[Vicinae](https://vicinae.com) is on trial as the launcher (`SUPER+SPACE`; Rofi remains on `SUPER+ALT+SPACE` until the trial ends). It comes from the AUR (`vicinae-bin`) and runs as its own user service, which launches apps through `uwsm app`.
+
+```bash
+sudo install -m 0644 pacman/hooks/vicinae-no-capability.hook /etc/pacman.d/hooks/   # before installing
+paru -S vicinae-bin
+stow --no-folding --target="$HOME" vicinae
+printf '{\n\t"imports": ["dotfiles.jsonc"]\n}\n' > ~/.config/vicinae/settings.json   # if it doesn't exist yet
+systemctl --user enable --now vicinae
+```
+
+- **Settings:** Vicinae rewrites `settings.json` itself, so the tracked settings live in `dotfiles.jsonc`, which `settings.json` imports and Vicinae never touches. They select the `dotfiles` theme and the system UI font.
+- **Theme:** the `35-vicinae` theme hook installs the palette as `~/.local/share/vicinae/themes/dotfiles.toml`.
+- **Capability:** the package gives its input helper `cap_dac_override`, which lets it bypass every file permission. This user is in the `input` group, which is all the helper needs, so the pacman hook removes the capability after every install and upgrade.
 
 ## Backups
 

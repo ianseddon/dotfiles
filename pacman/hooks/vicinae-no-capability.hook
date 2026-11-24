@@ -1,0 +1,17 @@
+# Vicinae's install script gives its input helper cap_dac_override, so it can read
+# /dev/input for snippet expansion. The capability bypasses all file permissions
+# for whoever runs the binary. Ian's user is in the input group, which is enough
+# for the helper, so the capability is removed after every install or upgrade.
+# Installed by hand: sudo install -m 0644 pacman/hooks/vicinae-no-capability.hook /etc/pacman.d/hooks/
+
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = vicinae
+Target = vicinae-bin
+
+[Action]
+Description = Removing cap_dac_override from vicinae-input-server...
+When = PostTransaction
+Exec = /usr/bin/setcap -r /usr/libexec/vicinae/vicinae-input-server

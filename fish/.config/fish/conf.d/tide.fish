@@ -1,5 +1,5 @@
 # Tide (fishPlugins.tide), as chosen in `tide configure`: lean style, two lines,
-# 16 colours (drawn from Ghostty's Kanagawa Wave palette), transient prompt.
+# 16 colours (the terminal's palette, so the prompt follows the theme), transient prompt.
 # Kept as globals here rather than the universals `tide configure` writes.
 # To change the look, run `tide configure` and regenerate this file:
 #   for v in (set -U --names | string match "tide_*"); echo set -g $v (string escape -- $$v); end

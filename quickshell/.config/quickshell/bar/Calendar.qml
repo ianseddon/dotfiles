@@ -54,8 +54,8 @@ Popup {
     Column {
         spacing: Style.spaceSm
 
-        WheelHandler {
-            onWheel: event => root.step(event.angleDelta.y > 0 ? -1 : 1)
+        WheelSteps {
+            onStep: direction => root.step(-direction)
         }
 
         Item {

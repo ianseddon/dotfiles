@@ -58,17 +58,17 @@ RowLayout {
 
                 TapHandler {
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                    // Click (left or right) opens the item's menu: libayatana items,
+                    // such as nm-applet and Spotify, implement no Activate, and a
+                    // failed Activate isn't reported to the shell. Middle-click
+                    // opens the app itself (Activate).
                     onTapped: (point, button) => {
                         const item = trayItem.modelData;
-                        if (button === Qt.MiddleButton) {
-                            item.secondaryActivate();
-                        } else if (button === Qt.RightButton || item.onlyMenu) {
-                            if (item.hasMenu) {
-                                root.menuItem = trayItem;
-                                menu.open = true;
-                            }
-                        } else {
+                        if (button === Qt.MiddleButton || !item.hasMenu) {
                             item.activate();
+                        } else {
+                            root.menuItem = trayItem;
+                            menu.open = true;
                         }
                     }
                 }

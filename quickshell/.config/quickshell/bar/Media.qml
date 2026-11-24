@@ -19,10 +19,10 @@ Pill {
         else if (player.canTogglePlaying)
             player.togglePlaying();
     }
-    onScrolled: delta => {
-        if (delta > 0 && player.canGoPrevious)
+    onScrolled: direction => {
+        if (direction > 0 && player.canGoPrevious)
             player.previous();
-        else if (delta < 0 && player.canGoNext)
+        else if (direction < 0 && player.canGoNext)
             player.next();
     }
 

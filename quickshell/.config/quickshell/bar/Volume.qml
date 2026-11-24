@@ -41,10 +41,9 @@ RowLayout {
         }
     }
 
-    WheelHandler {
-        onWheel: event => {
-            const step = event.angleDelta.y > 0 ? 0.05 : -0.05;
-            Audio.setVolume(Math.round((Audio.volume + step) * 20) / 20);
+    WheelSteps {
+        onStep: direction => {
+            Audio.setVolume(Math.round((Audio.volume + direction * 0.05) * 20) / 20);
             scrolling.restart();
         }
     }

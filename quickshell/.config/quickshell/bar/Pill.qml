@@ -17,7 +17,8 @@ Rectangle {
     readonly property bool hovered: hover.hovered
 
     signal clicked(int button)
-    signal scrolled(int delta)
+    // +1 for each wheel notch up, -1 for each notch down.
+    signal scrolled(int direction)
 
     implicitWidth: row.implicitWidth + 2 * padding
     implicitHeight: Style.barHeight
@@ -42,8 +43,8 @@ Rectangle {
         onTapped: (point, button) => root.clicked(button)
     }
 
-    WheelHandler {
-        onWheel: event => root.scrolled(event.angleDelta.y)
+    WheelSteps {
+        onStep: direction => root.scrolled(direction)
     }
 
     RowLayout {

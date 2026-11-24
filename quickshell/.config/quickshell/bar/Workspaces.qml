@@ -19,7 +19,7 @@ Pill {
     }
 
     spacing: Style.spaceSm
-    onScrolled: delta => focusWorkspace(delta > 0 ? "e-1" : "e+1")
+    onScrolled: direction => focusWorkspace(direction > 0 ? "e-1" : "e+1")
 
     Repeater {
         model: root.workspaces

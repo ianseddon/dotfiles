@@ -339,21 +339,18 @@ herdr integration install pi
 
 Notifications go through the terminal (`[ui.toast] delivery = "terminal"`), so Ghostty raises them for local and remote workspaces alike.
 
-### Phone and browser: Ovis (M75q)
+### Dev servers over Tailscale (M75q)
 
-[Ovis](https://github.com/devswha/ovis) (formerly herdr web UI) runs where the agents do: it shows herdr's layout, each agent's transcript as a chat beside the live terminal, and sends push alerts when an agent needs input or finishes. Requests from `OVIS_TAILSCALE_OWNER`'s devices get in; anything else, including the tagged host itself, needs a pairing code. A tagged node has no owner of its own to compare against, so the owner has to be named.
+The M75q has no browser of its own, so `m75q/.config/fish/conf.d/portless.fish` sets `PORTLESS_TAILSCALE=1`. [portless](https://portless.sh/commands#share-on-tailscale) then shares every app it runs through `tailscale serve`, beside its `https://*.localhost` URL, and removes the share when the app stops. The first app gets `https://m75q.hawk-monster.ts.net`, and each app after it gets the next free port from 8443. `pnpm dev` prints each tailnet URL, and `portless list` prints them again. Browsers keep cookies per host, not per port, so apps that share the host also share cookies: run one Nova at a time when you test it this way.
+
+In workforce-monorepo, Nova accepts sign-in on both URLs. Its Keycloak must also be reachable from other devices. The same file sets `KC_HOSTNAME`, the URL that the compose Keycloak serves its pages at and issues tokens for. Publish Keycloak at that URL once, then recreate the container:
 
 ```bash
-herdr plugin install devswha/ovis --yes
-cfg=$(herdr plugin config-dir devswha.ovis); mkdir -p "$cfg"
-printf '%s\n' OVIS_TELEMETRY=0 OVIS_APP_NAME=M75q \
-  OVIS_PUSH_SUBJECT=mailto:ianseddon55@gmail.com \
-  OVIS_TAILSCALE_OWNER=ianseddon55@gmail.com > "$cfg/env"; chmod 600 "$cfg/env"
-herdr plugin action invoke devswha.ovis.start   # also starts with herdr from now on
-tailscale serve --bg --https=443 http://127.0.0.1:7317
+tailscale serve --bg --https=8080 http://127.0.0.1:8080
+pnpm docker:up   # from a workforce-monorepo checkout that reads KC_HOSTNAME
 ```
 
-Open `https://m75q.hawk-monster.ts.net` on the phone, install it, then **Settings → Alerts → Send test**. HTTPS is required for install and push, Tailscale's operator must be this user (`sudo tailscale set --operator=$USER`) for `tailscale serve` to run unprivileged, and renaming the host changes the origin, so phones subscribe again. State (push keys, subscriptions, updates) is in `~/.config/ovis`; new releases come through **Settings → Updates**. Collie, used before it, is removed from both machines. If the page returns 502, the Ovis server has stopped: run the `start` action again.
+`tailscale serve` runs unprivileged only when this user is Tailscale's operator (`sudo tailscale set --operator=$USER`). A checkout from before `KC_HOSTNAME` existed expects the issuer `http://localhost:8080/realms/pool`, so sign-in fails there until it is rebased. Running `pnpm docker:up` from such a checkout also moves Keycloak back to localhost.
 
 ### Browser dashboard: agent-browser (M75q)
 

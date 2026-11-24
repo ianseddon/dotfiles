@@ -1,6 +1,6 @@
 # Spec: theme — V1
 
-Status: approved 2026-11-24. Module `theme` in the [capability map](README.md).
+Status: implemented 2026-11-24. Module `theme` in the [capability map](README.md). Changed since by [SPEC-fonts-and-terminals.md](SPEC-fonts-and-terminals.md): `theme font`, and hooks that sync the palette and fonts to each app.
 
 ## Objective
 

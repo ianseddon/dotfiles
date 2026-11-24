@@ -1,6 +1,6 @@
 # Spec delta: fonts, and the terminal palette
 
-Status: approved 2026-11-24. This changes [SPEC-theme.md](SPEC-theme.md) and delivers the first part of the `app-themes` module.
+Status: implemented 2026-11-24. This changes [SPEC-theme.md](SPEC-theme.md) and delivers the first part of the `app-themes` module.
 
 ## Objective
 

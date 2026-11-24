@@ -201,7 +201,10 @@ QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input quickshell/tests
 Known noise:
 
 - **`qmllint`'s path handling:** pass absolute paths. With relative paths it misreads `theme/qmldir` and reports the singletons as undeclared.
-- **`PanelWindow` "is not creatable" (`qmllint`):** Quickshell's type information marks its window types uncreatable, because it creates them through a proxy. They work.
+- **Quickshell's own type information (`qmllint`):** three kinds of finding come from it, and the code works in each case:
+  - `PanelWindow` "is not creatable": Quickshell creates its window types through a proxy, so its type information marks them uncreatable.
+  - `values` "not found on type UntypedObjectModel": Quickshell's object models have a `values` list that its type information doesn't describe.
+  - A popup's `anchor.item`, `anchor.edges` and the like "not found": the same proxy problem, for `PopupWindow`.
 - **`qt.qpa.wayland.textinput` "Trying to disable … but 0x0 is focused" (the log):** Qt logs this whenever a shell surface that had keyboard focus closes. It is a known, harmless Qt Wayland bug that also appears in other Qt apps and Quickshell shells.
 
 ## Backups

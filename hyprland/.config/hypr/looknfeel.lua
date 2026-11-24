@@ -91,6 +91,20 @@ hl.layer_rule({
     no_anim = true,
 })
 
+----------------
+---- SHELL ----
+----------------
+
+-- Quickshell's bar: blur behind its translucent pills and popups, but not the
+-- transparent space around them (ignore_alpha).
+hl.layer_rule({
+    name         = "quickshell_bar_blur",
+    match        = { namespace = "^quickshell:bar$" },
+    blur         = true,
+    blur_popups  = true,
+    ignore_alpha = 0.5,
+})
+
 ------------------
 ---- TERMINAL ----
 ------------------

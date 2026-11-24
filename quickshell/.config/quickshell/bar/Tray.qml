@@ -1,0 +1,84 @@
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import Quickshell.Services.SystemTray
+import Quickshell.Widgets
+import "../theme"
+
+// Tray icons behind a chevron; hovering slides them out.
+Row {
+    id: root
+
+    property var menuItem: null
+
+    spacing: Style.spaceSm
+    visible: SystemTray.items.values.length > 0
+
+    HoverHandler {
+        id: pointer
+    }
+
+    HoverState {
+        id: drawer
+
+        hovered: pointer.hovered || menu.open
+        showDelay: 0
+        hideDelay: Style.drawerDelay
+    }
+
+    Icon {
+        text: drawer.revealed ? "\u{f0142}" : "\u{f0141}"
+        color: pointer.hovered ? Theme.foreground : Theme.darkForeground
+    }
+
+    Reveal {
+        shown: drawer.revealed
+
+        Repeater {
+            model: SystemTray.items
+
+            Item {
+                id: trayItem
+
+                required property SystemTrayItem modelData
+
+                implicitWidth: Style.trayIconSize + Style.spaceSm
+                implicitHeight: Style.barHeight
+
+                IconImage {
+                    anchors.centerIn: parent
+                    implicitSize: Style.trayIconSize
+                    source: trayItem.modelData.icon
+                }
+
+                HoverHandler {
+                    cursorShape: Qt.PointingHandCursor
+                }
+
+                TapHandler {
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                    onTapped: (point, button) => {
+                        const item = trayItem.modelData;
+                        if (button === Qt.MiddleButton) {
+                            item.secondaryActivate();
+                        } else if (button === Qt.RightButton || item.onlyMenu) {
+                            if (item.hasMenu) {
+                                root.menuItem = trayItem;
+                                menu.open = true;
+                            }
+                        } else {
+                            item.activate();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    TrayMenu {
+        id: menu
+
+        owner: root.menuItem ?? root
+        handle: root.menuItem?.modelData.menu ?? null
+    }
+}

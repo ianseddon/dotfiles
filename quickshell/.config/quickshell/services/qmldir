@@ -1,0 +1,5 @@
+singleton SystemStats 1.0 SystemStats.qml
+singleton Health 1.0 Health.qml
+singleton Dictation 1.0 Dictation.qml
+singleton Audio 1.0 Audio.qml
+singleton Media 1.0 Media.qml

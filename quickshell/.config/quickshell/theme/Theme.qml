@@ -52,6 +52,15 @@ Singleton {
         return palette.colours[key];
     }
 
+    // The colour for a level or severity: "warning", "critical", or anything else.
+    function levelColour(level: string): color {
+        if (level === "critical")
+            return red;
+        if (level === "warning")
+            return yellow;
+        return foreground;
+    }
+
     // Text that reads well on a background colour.
     function textOn(background: color): color {
         return Palette.textOn(background.toString()) === "dark" ? darkerBackground : brightForeground;

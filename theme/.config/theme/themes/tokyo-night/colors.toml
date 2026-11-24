@@ -1,0 +1,43 @@
+# Tokyo Night, "night" style. Source: folke/tokyonight.nvim cdc07ac78467 (2026-03-24),
+# lua/tokyonight/colors/{storm,night}.lua; computed values (selection, bright
+# colours) from extras/ghostty/tokyonight_night.
+# Role mapping, shared by every theme here:
+#   background = Normal bg; dark/darker_background = the darker upstream bgs (floats,
+#   sidebars), repeated when upstream has only one; lighter_background = one step up.
+#   selection = Visual. muted = the dimmest UI grey (NonText or ANSI 8).
+#   dark_foreground = Comment. foreground = Normal fg; bright_foreground = the
+#   brightest upstream text; light_foreground sits between, or equals foreground.
+#   Named colours follow upstream's terminal palette where it is hue-faithful.
+# Tokyo Night: accent = blue, the colour of lualine's Normal mode.
+# brown has no upstream colour: 40% orange over background.
+mode = "dark"
+
+accent = "#7aa2f7"            # blue
+selection = "#283457"         # bg_visual
+muted = "#414868"             # terminal_black
+
+background = "#1a1b26"        # bg
+dark_background = "#16161e"   # bg_dark
+darker_background = "#0c0e14" # bg_dark1
+lighter_background = "#292e42" # bg_highlight
+
+foreground = "#c0caf5"        # fg
+dark_foreground = "#565f89"   # comment
+light_foreground = "#c0caf5"  # fg
+bright_foreground = "#c0caf5" # fg
+
+red = "#f7768e"
+yellow = "#e0af68"
+orange = "#ff9e64"
+green = "#9ece6a"
+cyan = "#7dcfff"
+blue = "#7aa2f7"
+magenta = "#bb9af7"
+brown = "#764f3f"             # derived
+
+bright_red = "#ff899d"
+bright_yellow = "#faba4a"
+bright_green = "#9fe044"
+bright_cyan = "#a4daff"
+bright_blue = "#8db0ff"
+bright_magenta = "#c7a9ff"

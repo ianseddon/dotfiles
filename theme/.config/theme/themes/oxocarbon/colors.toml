@@ -1,0 +1,45 @@
+# Oxocarbon, dark. Source: nyoom-engineering/oxocarbon.nvim cd6523a0836d (2026-09-08),
+# lua/oxocarbon/init.lua; the blended greys were computed with its colorutils.
+# Role mapping, shared by every theme here:
+#   background = Normal bg; dark/darker_background = the darker upstream bgs (floats,
+#   sidebars), repeated when upstream has only one; lighter_background = one step up.
+#   selection = Visual. muted = the dimmest UI grey (NonText or ANSI 8).
+#   dark_foreground = Comment. foreground = Normal fg; bright_foreground = the
+#   brightest upstream text; light_foreground sits between, or equals foreground.
+#   Named colours follow upstream's terminal palette where it is hue-faithful.
+# Oxocarbon: accent = base09, the colour of lualine's Normal mode. Its terminal
+# palette assigns colours by role, not hue (ANSI red is blue), so named colours are
+# picked by hue instead. It has no yellow or orange: those come from IBM Carbon, the
+# design system it is built on (yellow 30, yellow 20, orange 40). brown: 40% orange
+# over background.
+mode = "dark"
+
+accent = "#78a9ff"            # base09
+selection = "#393939"         # base02
+muted = "#393939"             # base02, NonText
+
+background = "#161616"        # base00
+dark_background = "#131313"   # blend
+darker_background = "#131313" # blend
+lighter_background = "#262626" # base01
+
+foreground = "#d0d0d0"        # base04
+dark_foreground = "#525252"   # base03, Comment
+light_foreground = "#f2f2f2"  # base05
+bright_foreground = "#ffffff" # base06
+
+red = "#ee5396"               # base10, DiagnosticError
+yellow = "#f1c21b"            # IBM Carbon yellow 30
+orange = "#ff832b"            # IBM Carbon orange 40
+green = "#42be65"             # base13
+cyan = "#08bdba"              # base07
+blue = "#78a9ff"              # base09
+magenta = "#be95ff"           # base14
+brown = "#73421e"             # derived
+
+bright_red = "#ff7eb6"        # base12
+bright_yellow = "#fddc69"     # IBM Carbon yellow 20
+bright_green = "#b3f6c0"      # DiagnosticOk
+bright_cyan = "#3ddbd9"       # base08
+bright_blue = "#82cfff"       # base15
+bright_magenta = "#be95ff"    # base14

@@ -1,0 +1,43 @@
+# Kanagawa Wave. Source: rebelot/kanagawa.nvim bb85e4bfc8d8 (2026-05-10),
+# lua/kanagawa/colors.lua and the "wave" theme in lua/kanagawa/themes.lua.
+# Role mapping, shared by every theme here:
+#   background = Normal bg; dark/darker_background = the darker upstream bgs (floats,
+#   sidebars), repeated when upstream has only one; lighter_background = one step up.
+#   selection = Visual. muted = the dimmest UI grey (NonText or ANSI 8).
+#   dark_foreground = Comment. foreground = Normal fg; bright_foreground = the
+#   brightest upstream text; light_foreground sits between, or equals foreground.
+#   Named colours follow upstream's terminal palette where it is hue-faithful.
+# Kanagawa: accent = crystalBlue, as gh-dash and herdr already use it.
+# Named colours are wave's term palette; orange = surimiOrange (extended colour 1),
+# brown = boatYellow1.
+mode = "dark"
+
+accent = "#7e9cd8"            # crystalBlue
+selection = "#223249"         # waveBlue1
+muted = "#54546d"             # sumiInk6
+
+background = "#1f1f28"        # sumiInk3
+dark_background = "#181820"   # sumiInk1
+darker_background = "#16161d" # sumiInk0
+lighter_background = "#2a2a37" # sumiInk4
+
+foreground = "#dcd7ba"        # fujiWhite
+dark_foreground = "#727169"   # fujiGray
+light_foreground = "#dcd7ba"  # fujiWhite
+bright_foreground = "#dcd7ba" # fujiWhite
+
+red = "#c34043"               # autumnRed
+yellow = "#c0a36e"            # boatYellow2
+orange = "#ffa066"            # surimiOrange
+green = "#76946a"             # autumnGreen
+cyan = "#6a9589"              # waveAqua1
+blue = "#7e9cd8"              # crystalBlue
+magenta = "#957fb8"           # oniViolet
+brown = "#938056"             # boatYellow1
+
+bright_red = "#e82424"        # samuraiRed
+bright_yellow = "#e6c384"     # carpYellow
+bright_green = "#98bb6c"      # springGreen
+bright_cyan = "#7aa89f"       # waveAqua2
+bright_blue = "#7fb4ca"       # springBlue
+bright_magenta = "#938aa9"    # springViolet1

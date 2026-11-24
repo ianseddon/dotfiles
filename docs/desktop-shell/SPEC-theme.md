@@ -82,6 +82,7 @@ red = "#f7768e"
 **Rules:**
 
 - **Required keys:** `mode` (`"dark"` or `"light"`) and the 25 colour keys shown above.
+- **Omarchy's fallbacks:** if `orange` is missing it uses `yellow`; if `brown` is missing it is `orange` mixed 50% with black. Three of Omarchy's own themes rely on these.
 - **Colour values:** `#rrggbb`.
 - **Extra keys:** allowed, and usable in templates.
 - **Theme names:** lowercase kebab-case, the same as the folder name.
@@ -234,6 +235,7 @@ def render(template: str, palette: Palette, *, source: Path) -> str:
 - **Theming Waybar and Rofi:** both are being replaced. They keep their current colours until the `bar` and `launcher` modules land.
 - **A theme picker UI:** a later launcher mode can call `theme list` and `theme set`.
 - **`theme install <git url>` for community themes:** copying a folder by hand works in V1.
+- **Older Omarchy themes that define only `color0` to `color15`:** all 23 current first-party themes use the named keys and work.
 - **Placeholders that mix colours** (Omarchy's `mix`): add them when a template needs them.
 - **Contrast checks on palettes.**
 - **Per-theme wallpapers and light mode.**

@@ -150,6 +150,15 @@ class PaletteValidationTest(SandboxTestCase):
         self.assertEqual(palette.values["hyprland_border"], "#123456")
         self.assertEqual(palette.values["variant"], "night")
 
+    def test_orange_and_brown_fall_back_like_omarchy(self) -> None:
+        palette = self.load(toml=palette_toml(orange=None, brown=None, yellow="#e0af68"))
+        self.assertEqual(palette.values["orange"], "#e0af68")
+        self.assertEqual(palette.values["brown"], "#705834")  # orange mixed 50% with black
+
+    def test_brown_falls_back_from_the_theme_orange(self) -> None:
+        palette = self.load(toml=palette_toml(brown=None, orange="#ff9e64"))
+        self.assertEqual(palette.values["brown"], "#804f32")
+
     def test_non_string_extra_key_is_rejected(self) -> None:
         with self.assertRaisesRegex(theme.ThemeError, r"'opacity' must be a string"):
             self.load(toml=palette_toml() + "opacity = 0.9\n")
@@ -372,6 +381,20 @@ class ListAndCurrentTest(SandboxTestCase):
         result = self.box.run("current")
         self.assertEqual(result.returncode, 1)
         self.assertIn("no theme set yet", result.stderr)
+
+
+class ShippedThemesTest(unittest.TestCase):
+    def test_every_shipped_theme_passes_check(self) -> None:
+        with tempfile.TemporaryDirectory() as state:
+            env = {**os.environ, "THEME_CONFIG_DIR": str(SHIPPED_CONFIG), "XDG_STATE_HOME": state}
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "check"], env=env, capture_output=True, text=True, check=False
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            result.stdout.split(),
+            ["ok", "gruvbox-material", "ok", "kanagawa", "ok", "oxocarbon", "ok", "tokyo-night"],
+        )
 
 
 if __name__ == "__main__":

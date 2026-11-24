@@ -1,0 +1,44 @@
+# Gruvbox Material, dark, medium background, "material" foreground.
+# Source: sainnhe/gruvbox-material 11d779b26a9a (2026-04-15),
+# gruvbox_material#get_palette() in autoload/gruvbox_material.vim.
+# Role mapping, shared by every theme here:
+#   background = Normal bg; dark/darker_background = the darker upstream bgs (floats,
+#   sidebars), repeated when upstream has only one; lighter_background = one step up.
+#   selection = Visual. muted = the dimmest UI grey (NonText or ANSI 8).
+#   dark_foreground = Comment. foreground = Normal fg; bright_foreground = the
+#   brightest upstream text; light_foreground sits between, or equals foreground.
+#   Named colours follow upstream's terminal palette where it is hue-faithful.
+# Gruvbox Material: upstream's statusline uses grey for Normal mode, so there is no
+# upstream accent; orange is a choice. Upstream's terminal palette repeats the normal
+# colours as the bright ones. brown has no upstream colour: 40% orange over background.
+mode = "dark"
+
+accent = "#e78a4e"            # orange
+selection = "#45403d"         # bg3
+muted = "#5a524c"             # bg5
+
+background = "#282828"        # bg0
+dark_background = "#1b1b1b"   # bg_dim
+darker_background = "#1b1b1b" # bg_dim
+lighter_background = "#32302f" # bg1
+
+foreground = "#d4be98"        # fg0
+dark_foreground = "#928374"   # grey1
+light_foreground = "#d4be98"  # fg0
+bright_foreground = "#ddc7a1" # fg1
+
+red = "#ea6962"
+yellow = "#d8a657"
+orange = "#e78a4e"
+green = "#a9b665"
+cyan = "#89b482"              # aqua
+blue = "#7daea3"
+magenta = "#d3869b"           # purple
+brown = "#744f37"             # derived
+
+bright_red = "#ea6962"
+bright_yellow = "#d8a657"
+bright_green = "#a9b665"
+bright_cyan = "#89b482"
+bright_blue = "#7daea3"
+bright_magenta = "#d3869b"

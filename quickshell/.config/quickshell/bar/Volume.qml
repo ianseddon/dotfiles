@@ -1,13 +1,14 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import "../theme"
 import "../services"
 import "../services/logic.js" as Logic
 
 // Volume: the level slides out on hover or scroll; "muted" stays while muted.
 // Scroll changes it by 5%, right-click mutes, click opens the mixer.
-Row {
+RowLayout {
     id: root
 
     spacing: Style.spaceSm

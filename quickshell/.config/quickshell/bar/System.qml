@@ -1,12 +1,13 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import "../theme"
 import "../services"
 
 // A gauge; CPU, memory, and temperature slide out on hover, or by themselves
 // while high. Click for detail.
-Row {
+RowLayout {
     id: root
 
     readonly property string level: [SystemStats.cpuLevel, SystemStats.memoryLevel, SystemStats.temperatureLevel].includes("critical") ? "critical" : [SystemStats.cpuLevel, SystemStats.memoryLevel, SystemStats.temperatureLevel].includes("warning") ? "warning" : "normal"

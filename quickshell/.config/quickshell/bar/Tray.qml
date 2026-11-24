@@ -1,12 +1,13 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import "../theme"
 
 // Tray icons behind a chevron; hovering slides them out.
-Row {
+RowLayout {
     id: root
 
     property var menuItem: null

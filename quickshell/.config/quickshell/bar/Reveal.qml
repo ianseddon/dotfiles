@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import "../theme"
 
 // Content that slides out while `shown`, and takes no space otherwise.
@@ -29,7 +30,7 @@ Item {
         }
     }
 
-    Row {
+    RowLayout {
         id: row
 
         anchors.verticalCenter: parent.verticalCenter

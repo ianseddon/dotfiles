@@ -1,9 +1,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import "../theme"
 
-// The bar's rounded surface. Its content is laid out in a row. Simple pills
+// The bar's rounded surface. Its content is laid out in a row, centred
+// vertically: items of different heights (icons, text, tray icons) line up. Simple pills
 // react through hovered, clicked() and scrolled(); items with their own
 // handlers inside take precedence.
 Rectangle {
@@ -44,7 +46,7 @@ Rectangle {
         onWheel: event => root.scrolled(event.angleDelta.y)
     }
 
-    Row {
+    RowLayout {
         id: row
 
         anchors.centerIn: parent

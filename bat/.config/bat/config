@@ -1,1 +1,2 @@
---theme "everforest-dark"
+# "ansi" draws with the terminal's 16 colours, so it follows the theme (`theme set`).
+--theme "ansi"

@@ -15,7 +15,7 @@
 
 [delta]
   features = side-by-side line-numbers decorations
-  syntax-theme = everforest-dark # this pulls from the bat theme cache
+  syntax-theme = ansi # the terminal's 16 colours, so it follows the theme
   navigate = true  # use n and N to move between diff sections
   dark = true
   hyperlinks = true

@@ -7,8 +7,8 @@ window-padding-x = 14
 window-padding-y = 14
 resize-overlay = never
 
-# Theme and colors
-theme = Kanagawa Wave
+# Theme and colors: the palette of the current theme (`theme set <name>`).
+config-file = ?"~/.local/state/theme/current/ghostty.conf"
 
 # Font settings
 font-family = "monospace" # use fontconfig default

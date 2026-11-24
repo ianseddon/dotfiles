@@ -16,10 +16,6 @@
       "rev": "086a40dc7ed8242c03be9f47fbcee68699cc2395",
       "src": "https://github.com/stevearc/conform.nvim"
     },
-    "everforest-nvim": {
-      "rev": "cf08aa67fc96946a01177ae483b7631733b4b5e6",
-      "src": "https://github.com/neanias/everforest-nvim"
-    },
     "flash.nvim": {
       "rev": "fcea7ff883235d9024dc41e638f164a450c14ca2",
       "src": "https://github.com/folke/flash.nvim"

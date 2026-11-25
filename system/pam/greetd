@@ -1,7 +1,7 @@
 #%PAM-1.0
 #
 # greetd login with GNOME Keyring unlocked by the login password. Deploy with:
-#   sudo install -m 0644 pam/greetd /etc/pam.d/greetd
+#   sudo install -m 0644 system/pam/greetd /etc/pam.d/greetd
 #
 # Arch's stock file plus the two pam_gnome_keyring lines. The auth line keeps
 # the typed password; the session line starts gnome-keyring-daemon and unlocks

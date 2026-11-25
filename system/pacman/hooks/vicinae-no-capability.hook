@@ -2,7 +2,7 @@
 # /dev/input for snippet expansion. The capability bypasses all file permissions
 # for whoever runs the binary. Ian's user is in the input group, which is enough
 # for the helper, so the capability is removed after every install or upgrade.
-# Installed by hand: sudo install -m 0644 pacman/hooks/vicinae-no-capability.hook /etc/pacman.d/hooks/
+# Installed by hand: sudo install -m 0644 system/pacman/hooks/vicinae-no-capability.hook /etc/pacman.d/hooks/
 
 [Trigger]
 Operation = Install

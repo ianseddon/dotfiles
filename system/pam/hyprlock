@@ -1,7 +1,7 @@
 #%PAM-1.0
 #
 # Screen locker auth for hyprlock. Deploy with:
-#   sudo install -m 0644 pam/hyprlock /etc/pam.d/hyprlock
+#   sudo install -m 0644 system/pam/hyprlock /etc/pam.d/hyprlock
 #
 # Arch ships "auth include login", which drags hyprlock through the full login
 # stack: pam_shells, pam_nologin and - the problem - pam_faillock. faillock

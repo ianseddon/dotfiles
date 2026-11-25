@@ -11,10 +11,10 @@ top=$(git rev-parse --show-toplevel)
 while read -r _ local_sha _ remote_sha; do
   [ "$local_sha" = "$zero" ] && continue
 
-  if [ "$remote_sha" = "$zero" ]; then
-    base=$(git merge-base "$local_sha" origin/main 2>/dev/null || true)
-  else
+  if [ "$remote_sha" != "$zero" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
     base=$remote_sha
+  else
+    base=$(git merge-base "$local_sha" origin/main 2>/dev/null || true)
   fi
 
   if [ -n "$base" ]; then

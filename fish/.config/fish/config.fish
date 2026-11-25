@@ -29,10 +29,8 @@ fish_add_path --path --append \
     $HOME/.local/bin \
     $HOME/.cargo/bin \
     $BUN_INSTALL/bin \
-    $HOME/.config/composer/vendor/bin \
     $HOME/go/bin \
-    $PNPM_HOME $PNPM_HOME/bin \
-    $HOME/.lando/bin
+    $PNPM_HOME
 
 if is_human
     # Human-only application preferences

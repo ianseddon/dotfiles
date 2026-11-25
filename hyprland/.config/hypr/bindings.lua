@@ -19,6 +19,47 @@ local function bind(keys, desc, dispatcher, opts)
     hl.bind(keys, dispatcher, opts)
 end
 
+-- Bind one command to a key's press and another to its release. Adapted from
+-- Omarchy's o.bind_hold (default/hypr/helpers.lua).
+local function bind_hold(keys, desc, press, release)
+    -- Hyprland starts a fresh Lua state on every reload, which forgets a hold
+    -- in progress, so its release would never run. A marker file outlives the
+    -- reload, and the new state runs the release it would have missed.
+    local runtime   = os.getenv("XDG_RUNTIME_DIR")
+    local signature = os.getenv("HYPRLAND_INSTANCE_SIGNATURE")
+    local marker    = runtime and signature
+        and (runtime .. "/hypr/" .. signature .. "/held-" .. keys:gsub("[^%w]", "_"))
+    if marker and os.remove(marker) then
+        hl.exec_cmd(release)
+    end
+
+    local held = false
+    local function on_press()
+        held = true
+        if marker then
+            local file = io.open(marker, "w")
+            if file then file:close() end
+        end
+        hl.exec_cmd(press)
+    end
+    local function on_release()
+        if not held then return end
+        held = false
+        if marker then os.remove(marker) end
+        hl.exec_cmd(release)
+    end
+
+    -- A modifier's mask differs between its press and its release, so both
+    -- halves ignore modifiers. Hyprland skips a plain release bind once another
+    -- key is released during the hold, which typing while held would do; a
+    -- transparent release bind still fires. Non-consuming keeps the release
+    -- from taking the key away from apps.
+    bind(keys, desc .. " (start)", on_press, { ignore_mods = true })
+    bind(keys, desc .. " (stop)", on_release, {
+        release = true, transparent = true, ignore_mods = true, non_consuming = true,
+    })
+end
+
 bind(mainMod .. " + RETURN", "Terminal",     hl.dsp.exec_cmd(terminal))
 bind(mainMod .. " + Q",      "Close window", hl.dsp.window.close())
 bind(mainMod .. " + M",      "Exit session", hl.dsp.exit())
@@ -107,4 +148,9 @@ bind(mainMod .. " + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse
 bind(mainMod .. " + SHIFT + S", "Screenshot region", hl.dsp.exec_cmd("hyprshot --mode region"))
 
 -- -- Dictation --
-bind(mainMod .. " + CTRL + X", "Toggle dictation", hl.dsp.exec_cmd("voxtype record toggle"))
+-- Alt + Space toggles, like Superwhisper's Option + Space. Holding Right Alt
+-- records until it is released (push-to-talk). Right Alt chords also start
+-- recording, so use Left Alt for chords such as Alt + Tab.
+bind("ALT + SPACE", "Toggle dictation", hl.dsp.exec_cmd("voxtype record toggle"))
+
+bind_hold("ALT + Alt_R", "Push-to-talk dictation", "voxtype record start", "voxtype record stop")

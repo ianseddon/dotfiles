@@ -1,3 +1,7 @@
+# Parakeet needs voxtype's ONNX build: `sudo voxtype setup onnx --enable`.
+# This CPU lacks AVX-512, so voxtype picks the CPU build (onnx-avx2), not CUDA.
+engine = "parakeet"
+
 state_file = "auto"
 
 [hotkey]
@@ -8,6 +12,11 @@ device = "default"
 sample_rate = 16000
 max_duration_secs = 60
 pause_media = true
+
+[parakeet]
+model = "parakeet-tdt-0.6b-v3-int8"
+# Voxtype can't detect this from the int8 model directory.
+model_type = "tdt"
 
 [whisper]
 model = "base.en"
@@ -23,3 +32,7 @@ type_delay_ms = 1
 on_recording_start = false
 on_recording_stop = false
 on_transcription = false
+
+[text]
+# Names the speech model keeps misspelling (case-insensitive).
+replacements = { "omachi" = "Omarchy", "hyperland" = "Hyprland" }

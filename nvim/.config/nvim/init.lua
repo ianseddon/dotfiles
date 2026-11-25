@@ -11,7 +11,6 @@ vim.pack.add({
 	gh("echasnovski/mini.base16"),
 	gh("nvim-lua/plenary.nvim"),
 	gh("ibhagwan/fzf-lua"),
-	gh("nvim-treesitter/nvim-treesitter"),
 	gh("nvim-treesitter/nvim-treesitter-textobjects"),
 	gh("lewis6991/gitsigns.nvim"),
 	gh("nvim-neo-tree/neo-tree.nvim"),
@@ -27,8 +26,7 @@ vim.pack.add({
 	gh("stevearc/conform.nvim"),
 	gh("wakatime/vim-wakatime"),
 	gh("paulbkim-dev/vim-herdr-navigation"),
-	gh("nickjvandyke/opencode.nvim"),
-	gh("saghen/blink.cmp"),
+	{ src = gh("saghen/blink.cmp"), version = vim.version.range("1.*") },
 	gh("rafamadriz/friendly-snippets"),
 	gh("b0o/SchemaStore.nvim"),
 	gh("nvim-neotest/neotest"),
@@ -55,6 +53,5 @@ require("plugins.conform")
 require("plugins.fzf-lua")
 require("plugins.blink")
 require("plugins.neotest")
-require("plugins.opencode")
 require("plugins.herdr-navigation")
 require("plugins.lsp")

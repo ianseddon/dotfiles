@@ -33,6 +33,10 @@ o.termguicolors = true
 o.updatetime = 250
 o.timeoutlen = 300
 o.mouse = "a"
+-- Over SSH / headless hosts (m75q), use OSC 52 so yanks reach the outer terminal.
+if not vim.env.DISPLAY and not vim.env.WAYLAND_DISPLAY then
+	vim.g.clipboard = "osc52"
+end
 o.clipboard = "unnamedplus"
 o.showmode = false
 o.autoread = true

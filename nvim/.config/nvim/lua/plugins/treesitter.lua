@@ -1,36 +1,5 @@
+-- Parsers and queries are bundled from nixpkgs in nix/tools/neovim.nix.
 local map = vim.keymap.set
-
-local parsers = {
-	"bash",
-	"c",
-	"css",
-	"diff",
-	"dockerfile",
-	"fish",
-	"go",
-	"gomod",
-	"gosum",
-	"html",
-	"javascript",
-	"json",
-	"lua",
-	"luadoc",
-	"luap",
-	"markdown",
-	"markdown_inline",
-	"python",
-	"query",
-	"regex",
-	"rust",
-	"svelte",
-	"toml",
-	"tsx",
-	"typescript",
-	"vim",
-	"vimdoc",
-	"yaml",
-}
-require("nvim-treesitter").install(parsers)
 
 vim.api.nvim_create_autocmd("FileType", {
 	group = vim.api.nvim_create_augroup("treesitter-start", {}),

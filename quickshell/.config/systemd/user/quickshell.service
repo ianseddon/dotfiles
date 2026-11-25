@@ -11,6 +11,11 @@ Type=simple
 ExecStart=/usr/bin/qs
 Slice=session.slice
 Restart=on-failure
+# On logout the compositor dies seconds before systemd stops this unit, and
+# each restart in that gap crashes at once. At the default 100ms, five of them
+# hit the start limit (5 in 10s) and the next session's start was refused.
+# Five starts 3s apart span more than 10s, so this loop can never hit it.
+RestartSec=3
 
 [Install]
 WantedBy=graphical-session.target

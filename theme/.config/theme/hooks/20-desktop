@@ -7,9 +7,9 @@ set -eu
 command -v gsettings >/dev/null || exit 0
 
 ensure() {
-	if [ "$(gsettings get org.gnome.desktop.interface "$1")" != "'$2'" ]; then
-		gsettings set org.gnome.desktop.interface "$1" "$2"
-	fi
+  if [ "$(gsettings get org.gnome.desktop.interface "$1")" != "'$2'" ]; then
+    gsettings set org.gnome.desktop.interface "$1" "$2"
+  fi
 }
 
 ensure monospace-font-name "Monospace 11"
@@ -17,5 +17,5 @@ ensure font-name "Sans 11"
 
 palette=${THEME_CURRENT:-}/palette.json
 if [ -f "$palette" ]; then
-	ensure color-scheme "prefer-$(jq -r .mode "$palette")"
+  ensure color-scheme "prefer-$(jq -r .mode "$palette")"
 fi

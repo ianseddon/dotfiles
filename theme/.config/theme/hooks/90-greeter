@@ -5,10 +5,10 @@
 set -eu
 dir=${THEME_GREETER_DIR:-/var/lib/greeter-theme}
 if [ ! -d "$dir" ]; then
-	echo "theme: $dir does not exist, so the login screen keeps its old theme (see the README)" >&2
-	exit 0
+  echo "theme: $dir does not exist, so the login screen keeps its old theme (see the README)" >&2
+  exit 0
 fi
 for file in name palette.json; do
-	cp "$THEME_CURRENT/$file" "$dir/.$file.tmp"
-	mv "$dir/.$file.tmp" "$dir/$file"
+  cp "$THEME_CURRENT/$file" "$dir/.$file.tmp"
+  mv "$dir/.$file.tmp" "$dir/$file"
 done

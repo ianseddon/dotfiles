@@ -7,33 +7,35 @@ let
   # reaches 0.43.0; the assertion below fails the build to say so.
   agent-browser-package =
     assert pkgs.lib.versionOlder pkgs.agent-browser.version "0.43.0";
-    pkgs.agent-browser.overrideAttrs (finalAttrs: previousAttrs: {
-      version = "0.43.0";
-      src = pkgs.fetchFromGitHub {
-        owner = "vercel-labs";
-        repo = "agent-browser";
-        tag = "v${finalAttrs.version}";
-        hash = "sha256-+hmbSIgTqs5uZW7j0hAhz/9Fd24Np80DfoccqN4fGF4=";
-      };
-      cargoHash = "sha256-MKTL/1k3gvGB0ylg4iAi2WyZ1sNrEpBJVtvjc7J6maA=";
-      # This test launches Chrome, which the build sandbox doesn't have.
-      checkFlags = (previousAttrs.checkFlags or [ ]) ++ [
-        "--skip=native::actions::tests::a_rejected_write_with_stripped_credentials_still_reaches_the_replay"
-      ];
-      passthru = previousAttrs.passthru // {
-        dashboard = previousAttrs.passthru.dashboard.overrideAttrs (dashboardAttrs: {
-          inherit (finalAttrs) version src;
-          pnpmDeps = pkgs.fetchPnpmDeps {
-            pname = "agent-browser-dashboard";
+    pkgs.agent-browser.overrideAttrs (
+      finalAttrs: previousAttrs: {
+        version = "0.43.0";
+        src = pkgs.fetchFromGitHub {
+          owner = "vercel-labs";
+          repo = "agent-browser";
+          tag = "v${finalAttrs.version}";
+          hash = "sha256-+hmbSIgTqs5uZW7j0hAhz/9Fd24Np80DfoccqN4fGF4=";
+        };
+        cargoHash = "sha256-MKTL/1k3gvGB0ylg4iAi2WyZ1sNrEpBJVtvjc7J6maA=";
+        # This test launches Chrome, which the build sandbox doesn't have.
+        checkFlags = (previousAttrs.checkFlags or [ ]) ++ [
+          "--skip=native::actions::tests::a_rejected_write_with_stripped_credentials_still_reaches_the_replay"
+        ];
+        passthru = previousAttrs.passthru // {
+          dashboard = previousAttrs.passthru.dashboard.overrideAttrs (_dashboardAttrs: {
             inherit (finalAttrs) version src;
-            pnpm = pkgs.pnpm_11;
-            pnpmWorkspaces = [ "dashboard" ];
-            fetcherVersion = 4;
-            hash = "sha256-gSxTBHR2Fcaq/hUSiOMK5W+6+fLw/D2sCRurXEP8ApI=";
-          };
-        });
-      };
-    });
+            pnpmDeps = pkgs.fetchPnpmDeps {
+              pname = "agent-browser-dashboard";
+              inherit (finalAttrs) version src;
+              pnpm = pkgs.pnpm_11;
+              pnpmWorkspaces = [ "dashboard" ];
+              fetcherVersion = 4;
+              hash = "sha256-gSxTBHR2Fcaq/hUSiOMK5W+6+fLw/D2sCRurXEP8ApI=";
+            };
+          });
+        };
+      }
+    );
 
   # agent-browser drives Chrome over CDP. Point it at nixpkgs' Chromium so both
   # machines automate the same pinned browser without `agent-browser install`,
@@ -61,15 +63,23 @@ let
   # gh extensions from nixpkgs instead of `gh extension install`, so they move
   # with `nix flake update`. gh only looks in ~/.local/share/gh/extensions,
   # which the `gh` Stow package links to this profile directory.
-  ghExtensions = with pkgs; [ gh-dash gh-enhance gh-stack ];
-  ghExtensionDir = pkgs.runCommand "gh-extensions" { } (''
-    mkdir -p $out/share/gh/extensions
-  '' + pkgs.lib.concatMapStrings (ext: ''
-    mkdir $out/share/gh/extensions/${ext.pname}
-    ln -s ${ext}/bin/${ext.pname} $out/share/gh/extensions/${ext.pname}/${ext.pname}
-  '') ghExtensions);
+  ghExtensions = with pkgs; [
+    gh-dash
+    gh-enhance
+    gh-stack
+  ];
+  ghExtensionDir = pkgs.runCommand "gh-extensions" { } (
+    ''
+      mkdir -p $out/share/gh/extensions
+    ''
+    + pkgs.lib.concatMapStrings (ext: ''
+      mkdir $out/share/gh/extensions/${ext.pname}
+      ln -s ${ext}/bin/${ext.pname} $out/share/gh/extensions/${ext.pname}/${ext.pname}
+    '') ghExtensions
+  );
 in
-with pkgs; [
+with pkgs;
+[
   completions
   ghExtensionDir
   git

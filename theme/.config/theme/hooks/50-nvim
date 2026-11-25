@@ -7,8 +7,8 @@ file=${THEME_CURRENT:-}/nvim.lua
 [ -f "$file" ] || exit 0
 
 for socket in "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/nvim.*; do
-	[ -S "$socket" ] || continue
-	if ! timeout 2 nvim --server "$socket" --remote-expr "luaeval('dofile(_A)', '$file')" >/dev/null 2>&1; then
-		echo "theme: the nvim at $socket did not reload" >&2
-	fi
+  [ -S "$socket" ] || continue
+  if ! timeout 2 nvim --server "$socket" --remote-expr "luaeval('dofile(_A)', '$file')" >/dev/null 2>&1; then
+    echo "theme: the nvim at $socket did not reload" >&2
+  fi
 done

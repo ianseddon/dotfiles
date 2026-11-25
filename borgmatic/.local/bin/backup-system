@@ -2,5 +2,5 @@
 # Back up root-only recovery material (system.yaml) as root, prompting via polkit.
 set -eu
 exec pkexec "$HOME/.nix-profile/bin/borgmatic" \
-    --config "$HOME/.config/borgmatic/system.yaml" \
-    create prune --stats --verbosity 1 "$@"
+  --config "$HOME/.config/borgmatic/system.yaml" \
+  create prune --stats --verbosity 1 "$@"

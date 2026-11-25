@@ -12,7 +12,7 @@ case $instances in
 esac
 
 for id in $(printf '%s' "$instances" | jq -r '.[].id'); do
-	if ! timeout 2 qs ipc --id "$id" call theme reload >/dev/null 2>&1; then
-		echo "theme: the Quickshell instance $id did not reload" >&2
-	fi
+  if ! timeout 2 qs ipc --id "$id" call theme reload >/dev/null 2>&1; then
+    echo "theme: the Quickshell instance $id did not reload" >&2
+  fi
 done

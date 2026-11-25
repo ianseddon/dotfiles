@@ -1,5 +1,4 @@
-# Package definitions stay in the checkout, not the home directory.
-flake\.nix
-flake\.lock
+# Package and formatter definitions stay in the checkout, not the home directory.
 dev\.nix
 hosts
+treefmt\.nix

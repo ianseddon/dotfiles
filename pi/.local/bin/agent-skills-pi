@@ -32,15 +32,15 @@ references="$dotfiles/agents/.agents/references"
 commits=$(jq -r '[.skills[] | select(.source == "addyosmani/agent-skills") | .commit] | unique | .[]' "$lock")
 case "$commits" in
 "")
-    echo "agent-skills-pi: no addyosmani/agent-skills skills in $lock" >&2
-    exit 1
-    ;;
+  echo "agent-skills-pi: no addyosmani/agent-skills skills in $lock" >&2
+  exit 1
+  ;;
 *"
 "*)
-    echo "agent-skills-pi: the installed skills come from several commits; run npx skills update first:" >&2
-    echo "$commits" >&2
-    exit 1
-    ;;
+  echo "agent-skills-pi: the installed skills come from several commits; run npx skills update first:" >&2
+  echo "$commits" >&2
+  exit 1
+  ;;
 esac
 commit=$commits
 short=$(printf %.7s "$commit")
@@ -53,68 +53,73 @@ git -C "$src" checkout -q FETCH_HEAD
 
 # Remove what the previous run generated, so commands upstream dropped go too.
 for dir in "$prompts" "$personas" "$references"; do
-    mkdir -p "$dir"
-    grep -lF "$marker" "$dir"/*.md 2>/dev/null | xargs -r rm --
+  mkdir -p "$dir"
+  grep -lF "$marker" "$dir"/*.md 2>/dev/null | xargs -r rm --
 done
 
 note() {
-    notes="$notes
+  notes="$notes
 - $1"
 }
 
 # Prompt templates: keep the description, drop Claude-only frontmatter, strip
 # the plugin's skill namespace, and add notes that map Claude Code terms to pi.
 for cmd in "$src"/.claude/commands/*.md; do
-    name=$(basename "$cmd")
-    # Everything after the closing --- of the frontmatter.
-    body=$(awk '/^---$/ && n < 2 { n++; next } n >= 2' "$cmd" | sed -e '/./,$!d' -e 's/agent-skills://g')
-    description=$(awk '/^---$/ { n++; next } n == 1 && /^description:/' "$cmd")
+  name=$(basename "$cmd")
+  # Everything after the closing --- of the frontmatter.
+  body=$(awk '/^---$/ && n < 2 { n++; next } n >= 2' "$cmd" | sed -e '/./,$!d' -e 's/agent-skills://g')
+  description=$(awk '/^---$/ { n++; next } n == 1 && /^description:/' "$cmd")
 
-    notes=""
-    case "$body" in *skill*)
-        note "To invoke a skill, read its SKILL.md from your available skills list and follow it." ;;
-    esac
-    case "$body" in *CLAUDE.md*)
-        note "CLAUDE.md means the project's agent instructions file: AGENTS.md, or CLAUDE.md where the project uses that." ;;
-    esac
-    case "$body" in *references/*)
-        note "Paths under \`references/\` are in \`~/.agents/references/\`." ;;
-    esac
-    case "$body" in *"plan mode"*)
-        note "pi has no plan mode: stay read-only and change no code until the plan is approved." ;;
-    esac
-    case "$body" in *ubagent*)
-        note "Spawn personas with the \`subagent\` tool from pi-subagents. The personas are user agents in \`~/.pi/agent/agents/\`; project agents in \`.pi/agents/\` with the same name override them. For a parallel fan-out, launch every persona in one \`runs.all([...])\` workflow. Claude Code's Agent tool, \`subagent_type\` and \`.claude/agents/\` do not apply." ;;
-    esac
+  notes=""
+  case "$body" in *skill*)
+    note "To invoke a skill, read its SKILL.md from your available skills list and follow it."
+    ;;
+  esac
+  case "$body" in *CLAUDE.md*)
+    note "CLAUDE.md means the project's agent instructions file: AGENTS.md, or CLAUDE.md where the project uses that."
+    ;;
+  esac
+  case "$body" in *references/*)
+    note "Paths under \`references/\` are in \`~/.agents/references/\`."
+    ;;
+  esac
+  case "$body" in *"plan mode"*)
+    note "pi has no plan mode: stay read-only and change no code until the plan is approved."
+    ;;
+  esac
+  case "$body" in *ubagent*)
+    note "Spawn personas with the \`subagent\` tool from pi-subagents. The personas are user agents in \`~/.pi/agent/agents/\`; project agents in \`.pi/agents/\` with the same name override them. For a parallel fan-out, launch every persona in one \`runs.all([...])\` workflow. Claude Code's Agent tool, \`subagent_type\` and \`.claude/agents/\` do not apply."
+    ;;
+  esac
 
-    {
-        echo "---"
-        echo "# $marker from $repo/blob/$commit/.claude/commands/$name"
-        echo "# Do not edit; change upstream or the generator instead."
-        echo "$description"
-        echo "---"
-        if [ -n "$notes" ]; then
-            echo "Pi host notes for this command, which comes from the agent-skills Claude Code plugin ($short):$notes"
-            echo
-        fi
-        printf '%s\n' "$body"
-        # Claude Code appends arguments when the command has no placeholder;
-        # pi drops them, so add one. The placeholders are pi's, not the shell's.
-        # shellcheck disable=SC2016
-        case "$body" in *'$ARGUMENTS'*) ;; *)
-            echo
-            echo 'User input: ${@:-none}'
-            ;;
-        esac
-    } >"$prompts/$name"
+  {
+    echo "---"
+    echo "# $marker from $repo/blob/$commit/.claude/commands/$name"
+    echo "# Do not edit; change upstream or the generator instead."
+    echo "$description"
+    echo "---"
+    if [ -n "$notes" ]; then
+      echo "Pi host notes for this command, which comes from the agent-skills Claude Code plugin ($short):$notes"
+      echo
+    fi
+    printf '%s\n' "$body"
+    # Claude Code appends arguments when the command has no placeholder;
+    # pi drops them, so add one. The placeholders are pi's, not the shell's.
+    # shellcheck disable=SC2016
+    case "$body" in *'$ARGUMENTS'*) ;; *)
+      echo
+      echo 'User input: ${@:-none}'
+      ;;
+    esac
+  } >"$prompts/$name"
 done
 
 # Personas: Claude Code subagents see the user's and project's instructions,
 # the skills, and every tool, and the main agent can delegate to them by
 # description. These pi-subagents settings match that.
 for persona in "$src"/agents/*.md; do
-    name=$(basename "$persona")
-    awk -v marker="$marker" -v source="$repo/blob/$commit/agents/$name" '
+  name=$(basename "$persona")
+  awk -v marker="$marker" -v source="$repo/blob/$commit/agents/$name" '
         /^---$/ && n++ == 1 {
             print "advertise: true"
             print "inheritProjectContext: true"
@@ -128,11 +133,11 @@ for persona in "$src"/agents/*.md; do
 done
 
 for ref in "$src"/references/*.md; do
-    {
-        echo "<!-- $marker from $repo/blob/$commit/references/$(basename "$ref"). Do not edit. -->"
-        echo
-        cat "$ref"
-    } >"$references/$(basename "$ref")"
+  {
+    echo "<!-- $marker from $repo/blob/$commit/references/$(basename "$ref"). Do not edit. -->"
+    echo
+    cat "$ref"
+  } >"$references/$(basename "$ref")"
 done
 
 echo "agent-skills-pi: generated from $short; run 'stow --no-folding --target=\$HOME pi' in $dotfiles to link new files."

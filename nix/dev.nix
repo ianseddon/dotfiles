@@ -60,6 +60,7 @@ let
     export HOME=$TMPDIR INFISICAL_DISABLE_UPDATE_CHECK=true
     ${pkgs.infisical}/bin/infisical completion fish > $dir/infisical.fish
   '';
+  neovim = import ./tools/neovim.nix { inherit pkgs; };
   # gh extensions from nixpkgs instead of `gh extension install`, so they move
   # with `nix flake update`. gh only looks in ~/.local/share/gh/extensions,
   # which the `gh` Stow package links to this profile directory.
@@ -140,9 +141,6 @@ with pkgs;
   fzf
   zoxide
   neovim
-  # nvim-treesitter (main) compiles its parsers with `tree-sitter build`
-  # and the gcc below.
-  tree-sitter
   # Code review: hunk for my own agents' changes, tuicr for other people's.
   hunk
   tuicr

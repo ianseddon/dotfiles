@@ -1,5 +1,22 @@
 #!/bin/sh
 # Reload Hyprland so it reads the new border colours. Outside a Hyprland session
-# (a TTY, an SSH login) there is nothing to reload.
+# (a TTY, an SSH login) there is nothing to reload. Long-lived shells (such as
+# panes inside herdr-core across a Hyprland restart) can hold a stale
+# HYPRLAND_INSTANCE_SIGNATURE, so fall back to the live instance from hyprctl.
+set -eu
+
 [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || exit 0
+command -v hyprctl >/dev/null || exit 0
+
+if hyprctl reload >/dev/null 2>&1; then
+  exit 0
+fi
+
+live=$(hyprctl instances -j 2>/dev/null | jq -r '.[0].instance // empty')
+if [ -n "$live" ] && [ "$live" != "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+  exec hyprctl --instance "$live" reload >/dev/null
+fi
+# No live Hyprland instance (session already ended): nothing to reload.
+[ -n "$live" ] || exit 0
+# The live instance itself failed to reload: surface stderr and exit non-zero.
 exec hyprctl reload >/dev/null

@@ -726,6 +726,25 @@ class ShippedTargetsTest(unittest.TestCase):
         result = run_shipped_hook("10-hyprland", env)
         self.assertEqual((result.returncode, result.stderr), (0, ""))
 
+    def test_hyprland_hook_retries_live_instance_when_signature_is_stale(self) -> None:
+        hyprctl = textwrap.dedent("""\
+            if [ "$1" = "instances" ]; then
+              echo '[{"instance":"live-sig"}]'
+              exit 0
+            fi
+            if [ "$1" = "--instance" ] && [ "$2" = "live-sig" ] && [ "$3" = "reload" ]; then
+              exit 0
+            fi
+            exit 4
+        """)
+        env = {
+            **self.fake_tools(hyprctl=hyprctl),
+            "HYPRLAND_INSTANCE_SIGNATURE": "stale-sig",
+        }
+        result = run_shipped_hook("10-hyprland", env)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        self.assertIn("hyprctl --instance live-sig reload", self.calls)
+
     def test_greeter_hook_copies_the_palette(self) -> None:
         greeter = self.out.parent / "greeter"
         greeter.mkdir()

@@ -38,3 +38,7 @@
 [url "https://github.com/"]
 	insteadOf = git@github.com:
 	insteadOf = ssh://git@github.com/
+
+# Repo-local hooks (.githooks) and filters for ~/dotfiles and its worktrees.
+[includeIf "gitdir:~/dotfiles/"]
+  path = ~/.config/git/dotfiles-repo.gitconfig

@@ -1,0 +1,47 @@
+# Checks formatting/lints (`nix flake check`) and evaluates every host profile
+# derivation. Full host builds are left to `.githooks/pre-push`, which reuses
+# the local Nix store.
+name: nix
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+      - ".githooks/**"
+      - "**.sh"
+      - ".github/workflows/nix.yaml"
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/determinate-nix-action@v3
+      - run: nix flake check
+      - name: Evaluate host profiles
+        run: |
+          hosts=$(nix eval --raw .#packages.x86_64-linux \
+            --apply 'p: builtins.concatStringsSep " " (builtins.attrNames p)')
+          for host in $hosts; do
+            echo "::group::$host"
+            nix eval --raw ".#packages.x86_64-linux.$host.drvPath"
+            echo
+            echo "::endgroup::"
+          done

@@ -1,0 +1,9 @@
+# Repo-local git settings for ~/dotfiles and all its linked worktrees.
+# Loaded by ~/.gitconfig via [includeIf "gitdir:~/dotfiles/"].
+[core]
+  hooksPath = .githooks
+
+# pi writes per-machine state back into settings.json; drop it when staging.
+[filter "pi-settings"]
+  clean = jq --indent 2 'del(.deviceId, .lastChangelogVersion, .extensionChangelogVersions)'
+  smudge = cat

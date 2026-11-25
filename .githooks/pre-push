@@ -1,0 +1,57 @@
+#!/bin/sh
+# Pre-push checks for ~/dotfiles and its worktrees:
+# - Builds every host profile declared in flake.nix when Nix files change,
+#   using the pushed commit and the local store.
+# - Runs theme and Quickshell test suites when their files change.
+set -eu
+
+zero=0000000000000000000000000000000000000000
+top=$(git rev-parse --show-toplevel)
+
+while read -r _ local_sha _ remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+
+  if [ "$remote_sha" = "$zero" ]; then
+    base=$(git merge-base "$local_sha" origin/main 2>/dev/null || true)
+  else
+    base=$remote_sha
+  fi
+
+  if [ -n "$base" ]; then
+    changed=$(git diff --name-only "$base" "$local_sha")
+  else
+    changed=$(git ls-tree -r --name-only "$local_sha")
+  fi
+
+  if printf '%s\n' "$changed" | grep -Eq '^(flake\.(nix|lock)$|nix/)'; then
+    flake="git+file://$top?rev=$local_sha"
+    hosts=$(nix eval --raw "$flake#packages.x86_64-linux" \
+      --apply 'p: builtins.concatStringsSep " " (builtins.attrNames p)')
+    for host in $hosts; do
+      short_sha=$(printf '%s' "$local_sha" | cut -c1-7)
+      echo "pre-push: building $host at $short_sha" >&2
+      if ! nix build --no-link "$flake#packages.x86_64-linux.$host"; then
+        echo "pre-push: $host failed to build; fix it before pushing" >&2
+        exit 1
+      fi
+    done
+  fi
+
+  if printf '%s\n' "$changed" | grep -q '^theme/'; then
+    echo "pre-push: running theme checks" >&2
+    python3 -m unittest discover -s "$top/theme/tests"
+    (
+      cd "$top/theme"
+      ruff check .
+      ruff format --check .
+      basedpyright
+    )
+  fi
+
+  if printf '%s\n' "$changed" | grep -q '^quickshell/'; then
+    if [ -x /usr/lib/qt6/bin/qmltestrunner ]; then
+      echo "pre-push: running quickshell tests" >&2
+      QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input "$top/quickshell/tests"
+    fi
+  fi
+done

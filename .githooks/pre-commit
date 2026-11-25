@@ -1,0 +1,47 @@
+#!/bin/sh
+# Pre-commit checks for ~/dotfiles and its worktrees (enabled via
+# git/.config/git/dotfiles-repo.gitconfig). Runs gitleaks on staged changes,
+# formats and lints staged files with `nix fmt`, and runs scoped linters.
+set -eu
+
+# Secret scan on staged changes. Use gitleaks on PATH when available,
+# falling back to nixpkgs from this flake.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks_ok=0
+  gitleaks git --staged --redact --no-banner --log-level warn . || gitleaks_ok=$?
+else
+  gitleaks_ok=0
+  nix --no-warn-dirty run --inputs-from . nixpkgs#gitleaks -- \
+    git --staged --redact --no-banner --log-level warn . || gitleaks_ok=$?
+fi
+if [ "$gitleaks_ok" -ne 0 ]; then
+  echo "pre-commit: gitleaks found a secret in the staged changes; remove it before committing" >&2
+  exit 1
+fi
+
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -n "$files" ] || exit 0
+
+# Nix + shell formatting and linting (nixfmt, deadnix, statix, shfmt, shellcheck).
+# shellcheck disable=SC2086 # one path per line; repo paths have no spaces
+if ! nix --no-warn-dirty fmt -- --fail-on-change --on-unmatched debug --quiet $files; then
+  echo "pre-commit: nix fmt failed or reformatted staged files; review and stage them, then commit again" >&2
+  exit 1
+fi
+
+# Python checks when theme/ is touched.
+if printf '%s\n' "$files" | grep -q '^theme/'; then
+  (
+    cd theme
+    ruff check .
+    ruff format --check .
+    basedpyright
+  )
+fi
+
+# Workflow lint when GitHub Actions files are touched.
+if printf '%s\n' "$files" | grep -q '^\.github/workflows/'; then
+  if command -v actionlint >/dev/null 2>&1; then
+    actionlint
+  fi
+fi

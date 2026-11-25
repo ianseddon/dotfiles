@@ -10,17 +10,19 @@ end
 # search path from XDG_DATA_DIRS before conf.d runs, and SSH logins don't get
 # environment.d, so add the directory here as well as exporting the variable.
 set -l nix_share "$HOME/.nix-profile/share"
-if test -d $nix_share/fish/vendor_completions.d
-    contains -- $nix_share/fish/vendor_completions.d $fish_complete_path
-    or set -g fish_complete_path $fish_complete_path[1] $nix_share/fish/vendor_completions.d $fish_complete_path[2..]
-end
-# Plugins in the profile (Tide, fzf.fish, done, sponge, direnv's hook) live in
-# share/fish/vendor_{functions,conf}.d, which fish also only finds through
-# XDG_DATA_DIRS at startup. When it missed them, load them now.
-if test -d $nix_share/fish/vendor_conf.d; and not contains -- $nix_share/fish/vendor_conf.d $__fish_vendor_confdirs
-    set -g fish_function_path $fish_function_path[1] $nix_share/fish/vendor_functions.d $fish_function_path[2..]
-    for f in $nix_share/fish/vendor_conf.d/*.fish
-        source $f
+if is_human
+    if test -d $nix_share/fish/vendor_completions.d
+        contains -- $nix_share/fish/vendor_completions.d $fish_complete_path
+        or set -g fish_complete_path $fish_complete_path[1] $nix_share/fish/vendor_completions.d $fish_complete_path[2..]
+    end
+    # Plugins in the profile (Tide, fzf.fish, done, sponge) live in
+    # share/fish/vendor_{functions,conf}.d, which fish also only finds through
+    # XDG_DATA_DIRS at startup. When it missed them, load them now.
+    if test -d $nix_share/fish/vendor_conf.d; and not contains -- $nix_share/fish/vendor_conf.d $__fish_vendor_confdirs
+        set -g fish_function_path $fish_function_path[1] $nix_share/fish/vendor_functions.d $fish_function_path[2..]
+        for f in $nix_share/fish/vendor_conf.d/*.fish
+            source $f
+        end
     end
 end
 if not contains -- $nix_share (string split : -- "$XDG_DATA_DIRS")
@@ -38,7 +40,7 @@ end
 # itself holds a version file and, when the pin isn't installed, keeps the
 # previous project's Node. This one installs a missing pin, and falls back
 # to the default rather than a stale version if that fails (e.g. offline).
-if status is-interactive; and command -q fnm
+if is_human; and command -q fnm
     fnm env --version-file-strategy=recursive --shell fish | source
 
     function _fnm_autoload_hook --on-variable PWD --description 'Use the directory\'s pinned Node'

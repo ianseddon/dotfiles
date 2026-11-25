@@ -1,6 +1,8 @@
 # Syntax highlighting and pager colours in the terminal's 16 ANSI colours, so they
 # follow the theme (`theme set` re-colours the terminal) on every machine, and
 # change live in running shells. Roles from kanagawa.nvim's fish theme.
+is_human; or return
+
 set -l foreground normal
 set -l selection --background=brblack
 set -l comment brblack

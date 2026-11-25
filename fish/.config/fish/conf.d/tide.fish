@@ -4,6 +4,9 @@
 # To change the look, run `tide configure` and regenerate this file:
 #   for v in (set -U --names | string match "tide_*"); echo set -g $v (string escape -- $$v); end
 
+# Kept unconditional: Tide renders its prompt asynchronously in a
+# non-interactive background `fish -c` worker (`</dev/null >/dev/null`), which
+# needs these `tide_*` globals.
 set -gx VIRTUAL_ENV_DISABLE_PROMPT true
 set -g tide_aws_bg_color normal
 set -g tide_aws_color yellow

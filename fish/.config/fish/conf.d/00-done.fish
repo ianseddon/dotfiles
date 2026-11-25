@@ -1,6 +1,8 @@
 # done (fishPlugins.done) notifies when a command that ran longer than this
 # finishes. It decides whether to enable itself as it loads, so these have to
 # be set first: the 00- prefix sorts this file ahead of the plugin's done.fish.
+is_human; or return
+
 set -g __done_min_cmd_duration 15000
 # Interactive programs and agents end when you quit them, not when work finishes.
 set -g __done_exclude '^git (?!push|pull|fetch)' '^(nvim|vim|v|lazygit|lazydocker|btop|hunk|tuicr|claude|pi|codex|ssh|man|less|bat|glow)\b'

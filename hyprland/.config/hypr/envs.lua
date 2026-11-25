@@ -28,4 +28,6 @@ hl.env("GBM_BACKEND", "nvidia-drm")
 hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 
 -- From https://wiki.hypr.land/Configuring/Advanced-and-Cool/Multi-GPU/
-hl.env("WLR_DRM_DEVICES", os.getenv("HOME") .. "/.config/hypr/card")
+-- Pin the NVIDIA card as the only GPU. AQ_DRM_DEVICES is colon-separated and
+-- the stable /dev/dri/by-path name contains colons, so `card` links to it.
+hl.env("AQ_DRM_DEVICES", os.getenv("HOME") .. "/.config/hypr/card")
